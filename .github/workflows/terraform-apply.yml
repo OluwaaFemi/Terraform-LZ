@@ -1,0 +1,103 @@
+name: terraform-apply
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: tf-apply-main
+  cancel-in-progress: false
+
+jobs:
+  apply-dev:
+    name: apply (dev) (${{ matrix.stack }})
+    runs-on: ubuntu-latest
+    environment: dev
+
+    strategy:
+      fail-fast: false
+      matrix:
+        stack:
+          - msft-lz-connectivity/msft-vwan-prod
+          - msft-lz-connectivity/msft-fwpolicy-dev
+          - msft-lz-connectivity/msft-vhub-dev
+
+    env:
+      ARM_USE_OIDC: true
+      ARM_USE_AZUREAD: true
+      ARM_CLIENT_ID: ${{ vars.ARM_CLIENT_ID || 'c14be0d1-54b1-4c90-949b-2775aec6307e' }}
+      ARM_TENANT_ID: ${{ vars.ARM_TENANT_ID || '9a9712e7-1382-4528-8495-b52ae7688acb' }}
+      ARM_SUBSCRIPTION_ID: ${{ vars.ARM_SUBSCRIPTION_ID || '2f69b2b1-5fe0-487d-8c82-52f5edeb454e' }}
+      TF_IN_AUTOMATION: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ env.ARM_CLIENT_ID }}
+          tenant-id: ${{ env.ARM_TENANT_ID }}
+          subscription-id: ${{ env.ARM_SUBSCRIPTION_ID }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform init
+        working-directory: ${{ matrix.stack }}
+        run: terraform init -input=false
+
+      - name: Terraform apply
+        working-directory: ${{ matrix.stack }}
+        run: terraform apply -input=false -auto-approve
+
+  apply-prod:
+    name: apply (prod) (${{ matrix.stack }})
+    runs-on: ubuntu-latest
+    environment: prod
+    needs: apply-dev
+
+    strategy:
+      fail-fast: false
+      matrix:
+        stack:
+          - msft-lz-connectivity/msft-fwpolicy-prod
+          - msft-lz-connectivity/msft-vhub-prod
+
+    env:
+      ARM_USE_OIDC: true
+      ARM_USE_AZUREAD: true
+      ARM_CLIENT_ID: ${{ vars.ARM_CLIENT_ID || 'c14be0d1-54b1-4c90-949b-2775aec6307e' }}
+      ARM_TENANT_ID: ${{ vars.ARM_TENANT_ID || '9a9712e7-1382-4528-8495-b52ae7688acb' }}
+      ARM_SUBSCRIPTION_ID: ${{ vars.ARM_SUBSCRIPTION_ID || '2f69b2b1-5fe0-487d-8c82-52f5edeb454e' }}
+      TF_IN_AUTOMATION: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ env.ARM_CLIENT_ID }}
+          tenant-id: ${{ env.ARM_TENANT_ID }}
+          subscription-id: ${{ env.ARM_SUBSCRIPTION_ID }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform init
+        working-directory: ${{ matrix.stack }}
+        run: terraform init -input=false
+
+      - name: Terraform apply
+        working-directory: ${{ matrix.stack }}
+        run: terraform apply -input=false -auto-approve
