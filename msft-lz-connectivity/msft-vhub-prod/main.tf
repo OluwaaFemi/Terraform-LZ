@@ -6,17 +6,23 @@ resource "azurerm_resource_group" "hub" {
 
 # Shared vWAN state (created by msft-vwan-prod stack)
 data "terraform_remote_state" "vwan" {
-  backend = "local"
+  backend = "azurerm"
   config = {
-    path = "C:/LocalApps/GithubWorkspaces/cx-statestore/msft-vwan-prod/terraform.tfstate"
+    resource_group_name  = "msft-tfstate-prod-rg"
+    storage_account_name = "msfttfstateprod001"
+    container_name       = "tfstate"
+    key                  = "msft-lz-connectivity/msft-vwan-prod/terraform.tfstate"
   }
 }
 
 # Firewall policy state (managed as its own stack in Option B)
 data "terraform_remote_state" "fwpolicy" {
-  backend = "local"
+  backend = "azurerm"
   config = {
-    path = "C:/LocalApps/GithubWorkspaces/cx-statestore/msft-fwpolicy-prod/terraform.tfstate"
+    resource_group_name  = "msft-tfstate-prod-rg"
+    storage_account_name = "msfttfstateprod001"
+    container_name       = "tfstate"
+    key                  = "msft-lz-connectivity/msft-fwpolicy-prod/terraform.tfstate"
   }
 }
 
