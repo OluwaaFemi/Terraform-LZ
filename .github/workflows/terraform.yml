@@ -604,13 +604,14 @@ jobs:
 
       - name: Terraform apply
         working-directory: msft-lz-connectivity/msft-vwan-prod
-        run: terraform apply -input=false -auto-approve
+        run: terraform apply -lock-timeout=10m -input=false -auto-approve
 
   apply-dev-fwpolicy:
     name: apply (dev) fwpolicy
     runs-on: ubuntu-latest
     needs:
       - detect-changes
+      - apply-vwan
       - plan-vwan
       - plan-fwpolicy-dev
       - plan-vhub-dev
@@ -619,9 +620,10 @@ jobs:
       (needs.detect-changes.outputs.shared == 'true' ||
        needs.detect-changes.outputs.fwpolicy_dev == 'true' ||
        needs.detect-changes.outputs.vhub_dev == 'true') &&
-      needs.plan-vwan.result == 'success' &&
-      needs.plan-fwpolicy-dev.result == 'success' &&
-      needs.plan-vhub-dev.result == 'success'
+       (needs.apply-vwan.result == 'success' || needs.apply-vwan.result == 'skipped') &&
+       needs.plan-vwan.result == 'success' &&
+       needs.plan-fwpolicy-dev.result == 'success' &&
+       needs.plan-vhub-dev.result == 'success'
 
     concurrency:
       group: tfstate-${{ github.workflow }}-msft-lz-connectivity/msft-fwpolicy-dev
@@ -648,7 +650,7 @@ jobs:
 
       - name: Terraform apply
         working-directory: msft-lz-connectivity/msft-fwpolicy-dev
-        run: terraform apply -input=false -auto-approve
+        run: terraform apply -lock-timeout=10m -input=false -auto-approve
 
   apply-dev-vhub:
     name: apply (dev) vhub
@@ -688,13 +690,14 @@ jobs:
 
       - name: Terraform apply
         working-directory: msft-lz-connectivity/msft-vhub-dev
-        run: terraform apply -input=false -auto-approve
+        run: terraform apply -lock-timeout=10m -input=false -auto-approve
 
   apply-prod-fwpolicy:
     name: apply (prod) fwpolicy
     runs-on: ubuntu-latest
     needs:
       - detect-changes
+      - apply-dev-vhub
       - plan-vwan
       - plan-fwpolicy-prod
       - plan-vhub-prod
@@ -703,9 +706,10 @@ jobs:
       (needs.detect-changes.outputs.shared == 'true' ||
        needs.detect-changes.outputs.fwpolicy_prod == 'true' ||
        needs.detect-changes.outputs.vhub_prod == 'true') &&
-      needs.plan-vwan.result == 'success' &&
-      needs.plan-fwpolicy-prod.result == 'success' &&
-      needs.plan-vhub-prod.result == 'success'
+       (needs.apply-dev-vhub.result == 'success' || needs.apply-dev-vhub.result == 'skipped') &&
+       needs.plan-vwan.result == 'success' &&
+       needs.plan-fwpolicy-prod.result == 'success' &&
+       needs.plan-vhub-prod.result == 'success'
 
     concurrency:
       group: tfstate-${{ github.workflow }}-msft-lz-connectivity/msft-fwpolicy-prod
@@ -732,7 +736,7 @@ jobs:
 
       - name: Terraform apply
         working-directory: msft-lz-connectivity/msft-fwpolicy-prod
-        run: terraform apply -input=false -auto-approve
+        run: terraform apply -lock-timeout=10m -input=false -auto-approve
 
   apply-prod-vhub:
     name: apply (prod) vhub
@@ -772,4 +776,4 @@ jobs:
 
       - name: Terraform apply
         working-directory: msft-lz-connectivity/msft-vhub-prod
-        run: terraform apply -input=false -auto-approve
+        run: terraform apply -lock-timeout=10m -input=false -auto-approve
