@@ -77,33 +77,36 @@ jobs:
               - '.github/workflows/**'
 
             # Shared root changes that should trigger (almost) everything.
+            # Stacks now live at repo root.
             shared:
-              - 'msft-lz-connectivity/**'
-              - '!msft-lz-connectivity/msft-vwan-prod/**'
-              - '!msft-lz-connectivity/msft-fwpolicy-dev/**'
-              - '!msft-lz-connectivity/msft-vhub-dev/**'
-              - '!msft-lz-connectivity/msft-fwpolicy-prod/**'
-              - '!msft-lz-connectivity/msft-vhub-prod/**'
+              - '**'
+              - '!.github/**'
+              - '!cx-lz-management/**'
+              - '!msft-vwan-prod/**'
+              - '!msft-fwpolicy-dev/**'
+              - '!msft-vhub-dev/**'
+              - '!msft-fwpolicy-prod/**'
+              - '!msft-vhub-prod/**'
               # NOTE: workflow changes must not trigger infra apply.
 
             vwan_prod:
-              - 'msft-lz-connectivity/msft-vwan-prod/**'
+              - 'msft-vwan-prod/**'
             fwpolicy_dev:
-              - 'msft-lz-connectivity/msft-fwpolicy-dev/**'
+              - 'msft-fwpolicy-dev/**'
             vhub_dev:
-              - 'msft-lz-connectivity/msft-vhub-dev/**'
+              - 'msft-vhub-dev/**'
             fwpolicy_prod:
-              - 'msft-lz-connectivity/msft-fwpolicy-prod/**'
+              - 'msft-fwpolicy-prod/**'
             vhub_prod:
-              - 'msft-lz-connectivity/msft-vhub-prod/**'
+              - 'msft-vhub-prod/**'
 
             dev:
-              - 'msft-lz-connectivity/msft-fwpolicy-dev/**'
-              - 'msft-lz-connectivity/msft-vhub-dev/**'
+              - 'msft-fwpolicy-dev/**'
+              - 'msft-vhub-dev/**'
             prod:
-              - 'msft-lz-connectivity/msft-vwan-prod/**'
-              - 'msft-lz-connectivity/msft-fwpolicy-prod/**'
-              - 'msft-lz-connectivity/msft-vhub-prod/**'
+              - 'msft-vwan-prod/**'
+              - 'msft-fwpolicy-prod/**'
+              - 'msft-vhub-prod/**'
 
       - name: Compute infra_changed
         id: infra
@@ -137,19 +140,19 @@ jobs:
           apply_prod='[]'
 
           if [[ "${{ steps.filter.outputs.shared }}" == 'true' ]]; then
-            apply_dev='["msft-lz-connectivity/msft-vwan-prod","msft-lz-connectivity/msft-fwpolicy-dev","msft-lz-connectivity/msft-vhub-dev"]'
-            apply_prod='["msft-lz-connectivity/msft-fwpolicy-prod","msft-lz-connectivity/msft-vhub-prod"]'
+            apply_dev='["msft-vwan-prod","msft-fwpolicy-dev","msft-vhub-dev"]'
+            apply_prod='["msft-fwpolicy-prod","msft-vhub-prod"]'
           else
             # dev
             if [[ "${{ steps.filter.outputs.fwpolicy_dev }}" == 'true' || "${{ steps.filter.outputs.vhub_dev }}" == 'true' ]]; then
-              apply_dev='["msft-lz-connectivity/msft-fwpolicy-dev","msft-lz-connectivity/msft-vhub-dev"]'
+              apply_dev='["msft-fwpolicy-dev","msft-vhub-dev"]'
             fi
 
             # prod
             if [[ "${{ steps.filter.outputs.vwan_prod }}" == 'true' ]]; then
-              apply_prod='["msft-lz-connectivity/msft-vwan-prod","msft-lz-connectivity/msft-fwpolicy-prod","msft-lz-connectivity/msft-vhub-prod"]'
+              apply_prod='["msft-vwan-prod","msft-fwpolicy-prod","msft-vhub-prod"]'
             elif [[ "${{ steps.filter.outputs.fwpolicy_prod }}" == 'true' || "${{ steps.filter.outputs.vhub_prod }}" == 'true' ]]; then
-              apply_prod='["msft-lz-connectivity/msft-fwpolicy-prod","msft-lz-connectivity/msft-vhub-prod"]'
+              apply_prod='["msft-fwpolicy-prod","msft-vhub-prod"]'
             fi
           fi
 
@@ -161,7 +164,7 @@ jobs:
   # -----------------
 
   plan-vwan:
-    name: plan (msft-lz-connectivity/msft-vwan-prod)
+    name: plan (msft-vwan-prod)
     runs-on: ubuntu-latest
     needs: detect-changes
     # PRs: plan everything. Push to main: always plan WAN first so downstream stacks
@@ -175,7 +178,7 @@ jobs:
          needs.detect-changes.outputs.prod == 'true'))
 
     concurrency:
-      group: tfstate-${{ github.workflow }}-msft-lz-connectivity/msft-vwan-prod
+      group: tfstate-${{ github.workflow }}-msft-vwan-prod
       cancel-in-progress: true
 
     steps:
@@ -194,19 +197,19 @@ jobs:
           terraform_wrapper: false
 
       - name: Terraform init
-        working-directory: msft-lz-connectivity/msft-vwan-prod
+        working-directory: msft-vwan-prod
         run: terraform init -input=false
 
       - name: Terraform fmt check
-        working-directory: msft-lz-connectivity/msft-vwan-prod
+        working-directory: msft-vwan-prod
         run: terraform fmt -check -recursive
 
       - name: Terraform validate
-        working-directory: msft-lz-connectivity/msft-vwan-prod
+        working-directory: msft-vwan-prod
         run: terraform validate
 
       - name: Terraform plan
-        working-directory: msft-lz-connectivity/msft-vwan-prod
+        working-directory: msft-vwan-prod
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
             terraform plan -lock=false -input=false -no-color -out=tfplan
@@ -220,8 +223,8 @@ jobs:
       - name: Upload plan artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tfplan-msft-lz-connectivity-msft-vwan-prod
-          path: msft-lz-connectivity/msft-vwan-prod/plan.txt
+          name: tfplan-msft-vwan-prod
+          path: msft-vwan-prod/plan.txt
 
       - name: Comment plan on PR (summary)
         if: always() && github.event_name == 'pull_request'
@@ -229,7 +232,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const stack = 'msft-lz-connectivity/msft-vwan-prod';
+            const stack = 'msft-vwan-prod';
             const path = `${process.env.GITHUB_WORKSPACE}/${stack}/plan.txt`;
             let plan = '';
             try { plan = fs.readFileSync(path, 'utf8'); } catch (e) { plan = `Failed to read plan output: ${e.message}`; }
@@ -263,7 +266,7 @@ jobs:
             }
 
   plan-fwpolicy-prod:
-    name: plan (msft-lz-connectivity/msft-fwpolicy-prod)
+    name: plan (msft-fwpolicy-prod)
     runs-on: ubuntu-latest
     needs:
       - detect-changes
@@ -276,7 +279,7 @@ jobs:
          needs.detect-changes.outputs.vhub_prod == 'true'))
 
     concurrency:
-      group: tfstate-${{ github.workflow }}-msft-lz-connectivity/msft-fwpolicy-prod
+      group: tfstate-${{ github.workflow }}-msft-fwpolicy-prod
       cancel-in-progress: true
 
     steps:
@@ -295,19 +298,19 @@ jobs:
           terraform_wrapper: false
 
       - name: Terraform init
-        working-directory: msft-lz-connectivity/msft-fwpolicy-prod
+        working-directory: msft-fwpolicy-prod
         run: terraform init -input=false
 
       - name: Terraform fmt check
-        working-directory: msft-lz-connectivity/msft-fwpolicy-prod
+        working-directory: msft-fwpolicy-prod
         run: terraform fmt -check -recursive
 
       - name: Terraform validate
-        working-directory: msft-lz-connectivity/msft-fwpolicy-prod
+        working-directory: msft-fwpolicy-prod
         run: terraform validate
 
       - name: Terraform plan
-        working-directory: msft-lz-connectivity/msft-fwpolicy-prod
+        working-directory: msft-fwpolicy-prod
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
             terraform plan -lock=false -input=false -no-color -out=tfplan
@@ -321,8 +324,8 @@ jobs:
       - name: Upload plan artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tfplan-msft-lz-connectivity-msft-fwpolicy-prod
-          path: msft-lz-connectivity/msft-fwpolicy-prod/plan.txt
+          name: tfplan-msft-fwpolicy-prod
+          path: msft-fwpolicy-prod/plan.txt
 
       - name: Comment plan on PR (summary)
         if: always() && github.event_name == 'pull_request'
@@ -330,7 +333,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const stack = 'msft-lz-connectivity/msft-fwpolicy-prod';
+            const stack = 'msft-fwpolicy-prod';
             const path = `${process.env.GITHUB_WORKSPACE}/${stack}/plan.txt`;
             let plan = '';
             try { plan = fs.readFileSync(path, 'utf8'); } catch (e) { plan = `Failed to read plan output: ${e.message}`; }
@@ -344,7 +347,7 @@ jobs:
             else await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body });
 
   plan-fwpolicy-dev:
-    name: plan (msft-lz-connectivity/msft-fwpolicy-dev)
+    name: plan (msft-fwpolicy-dev)
     runs-on: ubuntu-latest
     needs:
       - detect-changes
@@ -357,7 +360,7 @@ jobs:
          needs.detect-changes.outputs.vhub_dev == 'true'))
 
     concurrency:
-      group: tfstate-${{ github.workflow }}-msft-lz-connectivity/msft-fwpolicy-dev
+      group: tfstate-${{ github.workflow }}-msft-fwpolicy-dev
       cancel-in-progress: true
 
     steps:
@@ -376,19 +379,19 @@ jobs:
           terraform_wrapper: false
 
       - name: Terraform init
-        working-directory: msft-lz-connectivity/msft-fwpolicy-dev
+        working-directory: msft-fwpolicy-dev
         run: terraform init -input=false
 
       - name: Terraform fmt check
-        working-directory: msft-lz-connectivity/msft-fwpolicy-dev
+        working-directory: msft-fwpolicy-dev
         run: terraform fmt -check -recursive
 
       - name: Terraform validate
-        working-directory: msft-lz-connectivity/msft-fwpolicy-dev
+        working-directory: msft-fwpolicy-dev
         run: terraform validate
 
       - name: Terraform plan
-        working-directory: msft-lz-connectivity/msft-fwpolicy-dev
+        working-directory: msft-fwpolicy-dev
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
             terraform plan -lock=false -input=false -no-color -out=tfplan
@@ -402,8 +405,8 @@ jobs:
       - name: Upload plan artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tfplan-msft-lz-connectivity-msft-fwpolicy-dev
-          path: msft-lz-connectivity/msft-fwpolicy-dev/plan.txt
+          name: tfplan-msft-fwpolicy-dev
+          path: msft-fwpolicy-dev/plan.txt
 
       - name: Comment plan on PR (summary)
         if: always() && github.event_name == 'pull_request'
@@ -411,7 +414,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const stack = 'msft-lz-connectivity/msft-fwpolicy-dev';
+            const stack = 'msft-fwpolicy-dev';
             const path = `${process.env.GITHUB_WORKSPACE}/${stack}/plan.txt`;
             let plan = '';
             try { plan = fs.readFileSync(path, 'utf8'); } catch (e) { plan = `Failed to read plan output: ${e.message}`; }
@@ -425,7 +428,7 @@ jobs:
             else await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body });
 
   plan-vhub-prod:
-    name: plan (msft-lz-connectivity/msft-vhub-prod)
+    name: plan (msft-vhub-prod)
     runs-on: ubuntu-latest
     needs:
       - detect-changes
@@ -438,7 +441,7 @@ jobs:
          needs.detect-changes.outputs.vhub_prod == 'true'))
 
     concurrency:
-      group: tfstate-${{ github.workflow }}-msft-lz-connectivity/msft-vhub-prod
+      group: tfstate-${{ github.workflow }}-msft-vhub-prod
       cancel-in-progress: true
 
     steps:
@@ -457,19 +460,19 @@ jobs:
           terraform_wrapper: false
 
       - name: Terraform init
-        working-directory: msft-lz-connectivity/msft-vhub-prod
+        working-directory: msft-vhub-prod
         run: terraform init -input=false
 
       - name: Terraform fmt check
-        working-directory: msft-lz-connectivity/msft-vhub-prod
+        working-directory: msft-vhub-prod
         run: terraform fmt -check -recursive
 
       - name: Terraform validate
-        working-directory: msft-lz-connectivity/msft-vhub-prod
+        working-directory: msft-vhub-prod
         run: terraform validate
 
       - name: Terraform plan
-        working-directory: msft-lz-connectivity/msft-vhub-prod
+        working-directory: msft-vhub-prod
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
             terraform plan -lock=false -input=false -no-color -out=tfplan
@@ -483,8 +486,8 @@ jobs:
       - name: Upload plan artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tfplan-msft-lz-connectivity-msft-vhub-prod
-          path: msft-lz-connectivity/msft-vhub-prod/plan.txt
+          name: tfplan-msft-vhub-prod
+          path: msft-vhub-prod/plan.txt
 
       - name: Comment plan on PR (summary)
         if: always() && github.event_name == 'pull_request'
@@ -492,7 +495,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const stack = 'msft-lz-connectivity/msft-vhub-prod';
+            const stack = 'msft-vhub-prod';
             const path = `${process.env.GITHUB_WORKSPACE}/${stack}/plan.txt`;
             let plan = '';
             try { plan = fs.readFileSync(path, 'utf8'); } catch (e) { plan = `Failed to read plan output: ${e.message}`; }
@@ -506,7 +509,7 @@ jobs:
             else await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body });
 
   plan-vhub-dev:
-    name: plan (msft-lz-connectivity/msft-vhub-dev)
+    name: plan (msft-vhub-dev)
     runs-on: ubuntu-latest
     needs:
       - detect-changes
@@ -519,7 +522,7 @@ jobs:
          needs.detect-changes.outputs.vhub_dev == 'true'))
 
     concurrency:
-      group: tfstate-${{ github.workflow }}-msft-lz-connectivity/msft-vhub-dev
+      group: tfstate-${{ github.workflow }}-msft-vhub-dev
       cancel-in-progress: true
 
     steps:
@@ -538,19 +541,19 @@ jobs:
           terraform_wrapper: false
 
       - name: Terraform init
-        working-directory: msft-lz-connectivity/msft-vhub-dev
+        working-directory: msft-vhub-dev
         run: terraform init -input=false
 
       - name: Terraform fmt check
-        working-directory: msft-lz-connectivity/msft-vhub-dev
+        working-directory: msft-vhub-dev
         run: terraform fmt -check -recursive
 
       - name: Terraform validate
-        working-directory: msft-lz-connectivity/msft-vhub-dev
+        working-directory: msft-vhub-dev
         run: terraform validate
 
       - name: Terraform plan
-        working-directory: msft-lz-connectivity/msft-vhub-dev
+        working-directory: msft-vhub-dev
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
             terraform plan -lock=false -input=false -no-color -out=tfplan
@@ -564,8 +567,8 @@ jobs:
       - name: Upload plan artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tfplan-msft-lz-connectivity-msft-vhub-dev
-          path: msft-lz-connectivity/msft-vhub-dev/plan.txt
+          name: tfplan-msft-vhub-dev
+          path: msft-vhub-dev/plan.txt
 
       - name: Comment plan on PR (summary)
         if: always() && github.event_name == 'pull_request'
@@ -573,7 +576,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const stack = 'msft-lz-connectivity/msft-vhub-dev';
+            const stack = 'msft-vhub-dev';
             const path = `${process.env.GITHUB_WORKSPACE}/${stack}/plan.txt`;
             let plan = '';
             try { plan = fs.readFileSync(path, 'utf8'); } catch (e) { plan = `Failed to read plan output: ${e.message}`; }
@@ -591,7 +594,7 @@ jobs:
   # ------------------------
 
   apply-vwan:
-    name: apply (msft-lz-connectivity/msft-vwan-prod)
+    name: apply (msft-vwan-prod)
     runs-on: ubuntu-latest
     needs:
       - detect-changes
@@ -603,7 +606,7 @@ jobs:
       needs.plan-vwan.result == 'success'
 
     concurrency:
-      group: tfstate-${{ github.workflow }}-msft-lz-connectivity/msft-vwan-prod
+      group: tfstate-${{ github.workflow }}-msft-vwan-prod
       cancel-in-progress: false
 
     steps:
@@ -622,11 +625,11 @@ jobs:
           terraform_wrapper: false
 
       - name: Terraform init
-        working-directory: msft-lz-connectivity/msft-vwan-prod
+        working-directory: msft-vwan-prod
         run: terraform init -input=false
 
       - name: Terraform apply
-        working-directory: msft-lz-connectivity/msft-vwan-prod
+        working-directory: msft-vwan-prod
         run: terraform apply -lock-timeout=10m -input=false -auto-approve
 
   apply-dev-fwpolicy:
@@ -650,7 +653,7 @@ jobs:
        needs.plan-vhub-dev.result == 'success'
 
     concurrency:
-      group: tfstate-${{ github.workflow }}-msft-lz-connectivity/msft-fwpolicy-dev
+      group: tfstate-${{ github.workflow }}-msft-fwpolicy-dev
       cancel-in-progress: false
 
     steps:
@@ -669,11 +672,11 @@ jobs:
           terraform_wrapper: false
 
       - name: Terraform init
-        working-directory: msft-lz-connectivity/msft-fwpolicy-dev
+        working-directory: msft-fwpolicy-dev
         run: terraform init -input=false
 
       - name: Terraform apply
-        working-directory: msft-lz-connectivity/msft-fwpolicy-dev
+        working-directory: msft-fwpolicy-dev
         run: terraform apply -lock-timeout=10m -input=false -auto-approve
 
   apply-dev-vhub:
@@ -691,7 +694,7 @@ jobs:
       needs.apply-dev-fwpolicy.result == 'success'
 
     concurrency:
-      group: tfstate-${{ github.workflow }}-msft-lz-connectivity/msft-vhub-dev
+      group: tfstate-${{ github.workflow }}-msft-vhub-dev
       cancel-in-progress: false
 
     steps:
@@ -710,11 +713,11 @@ jobs:
           terraform_wrapper: false
 
       - name: Terraform init
-        working-directory: msft-lz-connectivity/msft-vhub-dev
+        working-directory: msft-vhub-dev
         run: terraform init -input=false
 
       - name: Terraform apply
-        working-directory: msft-lz-connectivity/msft-vhub-dev
+        working-directory: msft-vhub-dev
         run: terraform apply -lock-timeout=10m -input=false -auto-approve
 
   apply-prod-fwpolicy:
@@ -738,7 +741,7 @@ jobs:
        needs.plan-vhub-prod.result == 'success'
 
     concurrency:
-      group: tfstate-${{ github.workflow }}-msft-lz-connectivity/msft-fwpolicy-prod
+      group: tfstate-${{ github.workflow }}-msft-fwpolicy-prod
       cancel-in-progress: false
 
     steps:
@@ -757,11 +760,11 @@ jobs:
           terraform_wrapper: false
 
       - name: Terraform init
-        working-directory: msft-lz-connectivity/msft-fwpolicy-prod
+        working-directory: msft-fwpolicy-prod
         run: terraform init -input=false
 
       - name: Terraform apply
-        working-directory: msft-lz-connectivity/msft-fwpolicy-prod
+        working-directory: msft-fwpolicy-prod
         run: terraform apply -lock-timeout=10m -input=false -auto-approve
 
   apply-prod-vhub:
@@ -779,7 +782,7 @@ jobs:
       needs.apply-prod-fwpolicy.result == 'success'
 
     concurrency:
-      group: tfstate-${{ github.workflow }}-msft-lz-connectivity/msft-vhub-prod
+      group: tfstate-${{ github.workflow }}-msft-vhub-prod
       cancel-in-progress: false
 
     steps:
@@ -798,9 +801,9 @@ jobs:
           terraform_wrapper: false
 
       - name: Terraform init
-        working-directory: msft-lz-connectivity/msft-vhub-prod
+        working-directory: msft-vhub-prod
         run: terraform init -input=false
 
       - name: Terraform apply
-        working-directory: msft-lz-connectivity/msft-vhub-prod
+        working-directory: msft-vhub-prod
         run: terraform apply -lock-timeout=10m -input=false -auto-approve
