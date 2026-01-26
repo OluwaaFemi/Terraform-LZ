@@ -77,7 +77,7 @@ jobs:
               - '!msft-lz-connectivity/msft-vhub-dev/**'
               - '!msft-lz-connectivity/msft-fwpolicy-prod/**'
               - '!msft-lz-connectivity/msft-vhub-prod/**'
-              - '.github/workflows/terraform.yml'
+              # NOTE: workflow changes must not trigger infra apply.
 
             vwan_prod:
               - 'msft-lz-connectivity/msft-vwan-prod/**'
@@ -146,8 +146,11 @@ jobs:
     # can read remote state safely and we maintain a consistent ordering.
     if: |
       github.event_name == 'pull_request' ||
-      github.event_name == 'push' ||
-      (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')
+      (github.event_name != 'pull_request' &&
+        (needs.detect-changes.outputs.shared == 'true' ||
+         needs.detect-changes.outputs.vwan_prod == 'true' ||
+         needs.detect-changes.outputs.dev == 'true' ||
+         needs.detect-changes.outputs.prod == 'true'))
 
     concurrency:
       group: tfstate-${{ github.workflow }}-msft-lz-connectivity/msft-vwan-prod
@@ -246,7 +249,9 @@ jobs:
     if: |
       github.event_name == 'pull_request' ||
       (github.event_name != 'pull_request' &&
-        (needs.detect-changes.outputs.shared == 'true' || needs.detect-changes.outputs.prod == 'true'))
+        (needs.detect-changes.outputs.shared == 'true' ||
+         needs.detect-changes.outputs.fwpolicy_prod == 'true' ||
+         needs.detect-changes.outputs.vhub_prod == 'true'))
 
     concurrency:
       group: tfstate-${{ github.workflow }}-msft-lz-connectivity/msft-fwpolicy-prod
@@ -325,7 +330,9 @@ jobs:
     if: |
       github.event_name == 'pull_request' ||
       (github.event_name != 'pull_request' &&
-        (needs.detect-changes.outputs.shared == 'true' || needs.detect-changes.outputs.dev == 'true'))
+        (needs.detect-changes.outputs.shared == 'true' ||
+         needs.detect-changes.outputs.fwpolicy_dev == 'true' ||
+         needs.detect-changes.outputs.vhub_dev == 'true'))
 
     concurrency:
       group: tfstate-${{ github.workflow }}-msft-lz-connectivity/msft-fwpolicy-dev
@@ -404,7 +411,9 @@ jobs:
     if: |
       github.event_name == 'pull_request' ||
       (github.event_name != 'pull_request' &&
-        (needs.detect-changes.outputs.shared == 'true' || needs.detect-changes.outputs.prod == 'true'))
+        (needs.detect-changes.outputs.shared == 'true' ||
+         needs.detect-changes.outputs.fwpolicy_prod == 'true' ||
+         needs.detect-changes.outputs.vhub_prod == 'true'))
 
     concurrency:
       group: tfstate-${{ github.workflow }}-msft-lz-connectivity/msft-vhub-prod
@@ -483,7 +492,9 @@ jobs:
     if: |
       github.event_name == 'pull_request' ||
       (github.event_name != 'pull_request' &&
-        (needs.detect-changes.outputs.shared == 'true' || needs.detect-changes.outputs.dev == 'true'))
+        (needs.detect-changes.outputs.shared == 'true' ||
+         needs.detect-changes.outputs.fwpolicy_dev == 'true' ||
+         needs.detect-changes.outputs.vhub_dev == 'true'))
 
     concurrency:
       group: tfstate-${{ github.workflow }}-msft-lz-connectivity/msft-vhub-dev
@@ -557,6 +568,44 @@ jobs:
   # Apply jobs (main only)
   # ------------------------
 
+  apply-vwan:
+    name: apply (msft-lz-connectivity/msft-vwan-prod)
+    runs-on: ubuntu-latest
+    needs:
+      - detect-changes
+      - plan-vwan
+    if: |
+      (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')) &&
+      (needs.detect-changes.outputs.shared == 'true' || needs.detect-changes.outputs.vwan_prod == 'true') &&
+      needs.plan-vwan.result == 'success'
+
+    concurrency:
+      group: tfstate-${{ github.workflow }}-msft-lz-connectivity/msft-vwan-prod
+      cancel-in-progress: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ env.ARM_CLIENT_ID }}
+          tenant-id: ${{ env.ARM_TENANT_ID }}
+          subscription-id: ${{ env.ARM_SUBSCRIPTION_ID }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform init
+        working-directory: msft-lz-connectivity/msft-vwan-prod
+        run: terraform init -input=false
+
+      - name: Terraform apply
+        working-directory: msft-lz-connectivity/msft-vwan-prod
+        run: terraform apply -input=false -auto-approve
+
   apply-dev-fwpolicy:
     name: apply (dev) fwpolicy
     runs-on: ubuntu-latest
@@ -567,11 +616,12 @@ jobs:
       - plan-vhub-dev
     if: |
       (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')) &&
-      (needs.detect-changes.outputs.shared == 'true' || needs.detect-changes.outputs.dev == 'true') &&
+      (needs.detect-changes.outputs.shared == 'true' ||
+       needs.detect-changes.outputs.fwpolicy_dev == 'true' ||
+       needs.detect-changes.outputs.vhub_dev == 'true') &&
       needs.plan-vwan.result == 'success' &&
       needs.plan-fwpolicy-dev.result == 'success' &&
-      needs.plan-vhub-dev.result == 'success' &&
-      (needs.detect-changes.outputs.shared == 'true' || needs.detect-changes.outputs.apply_dev_fwpolicy == 'true')
+      needs.plan-vhub-dev.result == 'success'
 
     concurrency:
       group: tfstate-${{ github.workflow }}-msft-lz-connectivity/msft-fwpolicy-dev
@@ -608,9 +658,10 @@ jobs:
       - apply-dev-fwpolicy
     if: |
       (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')) &&
-      (needs.detect-changes.outputs.shared == 'true' || needs.detect-changes.outputs.dev == 'true') &&
-      needs.apply-dev-fwpolicy.result == 'success' &&
-      (needs.detect-changes.outputs.shared == 'true' || needs.detect-changes.outputs.apply_dev_vhub == 'true')
+      (needs.detect-changes.outputs.shared == 'true' ||
+       needs.detect-changes.outputs.fwpolicy_dev == 'true' ||
+       needs.detect-changes.outputs.vhub_dev == 'true') &&
+      needs.apply-dev-fwpolicy.result == 'success'
 
     concurrency:
       group: tfstate-${{ github.workflow }}-msft-lz-connectivity/msft-vhub-dev
@@ -644,17 +695,17 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - detect-changes
-      - apply-dev-vhub
       - plan-vwan
       - plan-fwpolicy-prod
       - plan-vhub-prod
     if: |
       (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')) &&
-      (needs.detect-changes.outputs.shared == 'true' || needs.detect-changes.outputs.prod == 'true') &&
+      (needs.detect-changes.outputs.shared == 'true' ||
+       needs.detect-changes.outputs.fwpolicy_prod == 'true' ||
+       needs.detect-changes.outputs.vhub_prod == 'true') &&
       needs.plan-vwan.result == 'success' &&
       needs.plan-fwpolicy-prod.result == 'success' &&
-      needs.plan-vhub-prod.result == 'success' &&
-      (needs.detect-changes.outputs.shared == 'true' || needs.detect-changes.outputs.fwpolicy_prod == 'true')
+      needs.plan-vhub-prod.result == 'success'
 
     concurrency:
       group: tfstate-${{ github.workflow }}-msft-lz-connectivity/msft-fwpolicy-prod
@@ -691,9 +742,10 @@ jobs:
       - apply-prod-fwpolicy
     if: |
       (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')) &&
-      (needs.detect-changes.outputs.shared == 'true' || needs.detect-changes.outputs.prod == 'true') &&
-      needs.apply-prod-fwpolicy.result == 'success' &&
-      (needs.detect-changes.outputs.shared == 'true' || needs.detect-changes.outputs.vhub_prod == 'true')
+      (needs.detect-changes.outputs.shared == 'true' ||
+       needs.detect-changes.outputs.fwpolicy_prod == 'true' ||
+       needs.detect-changes.outputs.vhub_prod == 'true') &&
+      needs.apply-prod-fwpolicy.result == 'success'
 
     concurrency:
       group: tfstate-${{ github.workflow }}-msft-lz-connectivity/msft-vhub-prod
