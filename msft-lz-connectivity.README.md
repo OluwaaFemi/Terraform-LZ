@@ -1,4 +1,16 @@
-# msft-lz-connectivity
+# msft-eslz-connectivity
+
+This repository was previously organized under a top-level folder named `msft-lz-connectivity/`.
+
+As part of a repo restructure, the connectivity stacks were moved to the repository root:
+
+- `msft-vwan-prod/`
+- `msft-fwpolicy-dev/`
+- `msft-vhub-dev/`
+- `msft-fwpolicy-prod/`
+- `msft-vhub-prod/`
+
+Remote state keys were intentionally kept unchanged (still prefixed with `msft-lz-connectivity/`) to avoid any state migration.
 
 This folder contains the Terraform stacks that make up the **Connectivity Landing Zone** used in this repo.
 
