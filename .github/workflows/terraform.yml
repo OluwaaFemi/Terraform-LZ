@@ -176,7 +176,11 @@ jobs:
       - name: Terraform plan
         working-directory: msft-lz-connectivity/msft-vwan-prod
         run: |
-          terraform plan -input=false -no-color -out=tfplan
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            terraform plan -lock=false -input=false -no-color -out=tfplan
+          else
+            terraform plan -input=false -no-color -out=tfplan
+          fi
           terraform show -no-color tfplan > plan.txt
 
       - name: Upload plan artifact
@@ -271,7 +275,11 @@ jobs:
       - name: Terraform plan
         working-directory: msft-lz-connectivity/msft-fwpolicy-prod
         run: |
-          terraform plan -input=false -no-color -out=tfplan
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            terraform plan -lock=false -input=false -no-color -out=tfplan
+          else
+            terraform plan -input=false -no-color -out=tfplan
+          fi
           terraform show -no-color tfplan > plan.txt
 
       - name: Upload plan artifact
@@ -346,7 +354,11 @@ jobs:
       - name: Terraform plan
         working-directory: msft-lz-connectivity/msft-fwpolicy-dev
         run: |
-          terraform plan -input=false -no-color -out=tfplan
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            terraform plan -lock=false -input=false -no-color -out=tfplan
+          else
+            terraform plan -input=false -no-color -out=tfplan
+          fi
           terraform show -no-color tfplan > plan.txt
 
       - name: Upload plan artifact
@@ -419,7 +431,11 @@ jobs:
       - name: Terraform plan
         working-directory: msft-lz-connectivity/msft-vhub-prod
         run: |
-          terraform plan -input=false -no-color -out=tfplan
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            terraform plan -lock=false -input=false -no-color -out=tfplan
+          else
+            terraform plan -input=false -no-color -out=tfplan
+          fi
           terraform show -no-color tfplan > plan.txt
 
       - name: Upload plan artifact
@@ -492,7 +508,11 @@ jobs:
       - name: Terraform plan
         working-directory: msft-lz-connectivity/msft-vhub-dev
         run: |
-          terraform plan -input=false -no-color -out=tfplan
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            terraform plan -lock=false -input=false -no-color -out=tfplan
+          else
+            terraform plan -input=false -no-color -out=tfplan
+          fi
           terraform show -no-color tfplan > plan.txt
 
       - name: Upload plan artifact
