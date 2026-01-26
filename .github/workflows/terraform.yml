@@ -53,6 +53,10 @@ jobs:
       dev: ${{ steps.filter.outputs.dev }}
       prod: ${{ steps.filter.outputs.prod }}
 
+      # Workflow-only changes should never trigger apply.
+      workflow_changed: ${{ steps.filter.outputs.workflow_changed }}
+      infra_changed: ${{ steps.infra.outputs.infra_changed }}
+
       # Apply stack lists (JSON arrays) derived from the above booleans.
       apply_dev_stacks_json: ${{ steps.set-matrix.outputs.apply_dev_stacks_json }}
       apply_prod_stacks_json: ${{ steps.set-matrix.outputs.apply_prod_stacks_json }}
@@ -69,6 +73,9 @@ jobs:
         uses: dorny/paths-filter@v3
         with:
           filters: |
+            workflow_changed:
+              - '.github/workflows/**'
+
             # Shared root changes that should trigger (almost) everything.
             shared:
               - 'msft-lz-connectivity/**'
@@ -97,6 +104,21 @@ jobs:
               - 'msft-lz-connectivity/msft-vwan-prod/**'
               - 'msft-lz-connectivity/msft-fwpolicy-prod/**'
               - 'msft-lz-connectivity/msft-vhub-prod/**'
+
+      - name: Compute infra_changed
+        id: infra
+        shell: bash
+        run: |
+          infra=false
+          if [[ "${{ steps.filter.outputs.shared }}" == 'true' || \
+                "${{ steps.filter.outputs.vwan_prod }}" == 'true' || \
+                "${{ steps.filter.outputs.fwpolicy_dev }}" == 'true' || \
+                "${{ steps.filter.outputs.vhub_dev }}" == 'true' || \
+                "${{ steps.filter.outputs.fwpolicy_prod }}" == 'true' || \
+                "${{ steps.filter.outputs.vhub_prod }}" == 'true' ]]; then
+            infra=true
+          fi
+          echo "infra_changed=${infra}" >> "$GITHUB_OUTPUT"
 
       - name: Set apply matrices
         id: set-matrix
@@ -576,6 +598,7 @@ jobs:
       - plan-vwan
     if: |
       (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')) &&
+      needs.detect-changes.outputs.infra_changed == 'true' &&
       (needs.detect-changes.outputs.shared == 'true' || needs.detect-changes.outputs.vwan_prod == 'true') &&
       needs.plan-vwan.result == 'success'
 
@@ -617,6 +640,7 @@ jobs:
       - plan-vhub-dev
     if: |
       (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')) &&
+      needs.detect-changes.outputs.infra_changed == 'true' &&
       (needs.detect-changes.outputs.shared == 'true' ||
        needs.detect-changes.outputs.fwpolicy_dev == 'true' ||
        needs.detect-changes.outputs.vhub_dev == 'true') &&
@@ -660,6 +684,7 @@ jobs:
       - apply-dev-fwpolicy
     if: |
       (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')) &&
+      needs.detect-changes.outputs.infra_changed == 'true' &&
       (needs.detect-changes.outputs.shared == 'true' ||
        needs.detect-changes.outputs.fwpolicy_dev == 'true' ||
        needs.detect-changes.outputs.vhub_dev == 'true') &&
@@ -703,6 +728,7 @@ jobs:
       - plan-vhub-prod
     if: |
       (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')) &&
+      needs.detect-changes.outputs.infra_changed == 'true' &&
       (needs.detect-changes.outputs.shared == 'true' ||
        needs.detect-changes.outputs.fwpolicy_prod == 'true' ||
        needs.detect-changes.outputs.vhub_prod == 'true') &&
@@ -746,6 +772,7 @@ jobs:
       - apply-prod-fwpolicy
     if: |
       (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')) &&
+      needs.detect-changes.outputs.infra_changed == 'true' &&
       (needs.detect-changes.outputs.shared == 'true' ||
        needs.detect-changes.outputs.fwpolicy_prod == 'true' ||
        needs.detect-changes.outputs.vhub_prod == 'true') &&
