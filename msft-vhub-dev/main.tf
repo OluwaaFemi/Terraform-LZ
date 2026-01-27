@@ -4,25 +4,14 @@ resource "azurerm_resource_group" "hub" {
   tags     = var.tags
 }
 
-# Shared vWAN state (created by msft-vwan-prod stack)
-data "terraform_remote_state" "vwan" {
-  backend = "azurerm"
-  config = {
-    resource_group_name  = "msft-tfstate-prod-rg"
-    storage_account_name = "msfttfstateprod001"
-    container_name       = "tfstate"
-    key                  = "msft-lz-connectivity/msft-vwan-prod/terraform.tfstate"
-  }
+data "azurerm_virtual_wan" "vwan" {
+  name                = var.virtual_wan_name
+  resource_group_name = var.virtual_wan_resource_group_name
 }
 
-data "terraform_remote_state" "fwpolicy" {
-  backend = "azurerm"
-  config = {
-    resource_group_name  = "msft-tfstate-dev-rg"
-    storage_account_name = "msfttfstatedev001"
-    container_name       = "tfstate"
-    key                  = "msft-lz-connectivity/msft-fwpolicy-dev/terraform.tfstate"
-  }
+data "azurerm_firewall_policy" "fwpolicy" {
+  name                = var.firewall_policy_name
+  resource_group_name = var.firewall_policy_resource_group_name
 }
 
 module "connectivity_virtual_hub" {
@@ -35,7 +24,7 @@ module "connectivity_virtual_hub" {
       location            = var.location
       resource_group_name = azurerm_resource_group.hub.name
       address_prefix      = var.hub_address_prefix
-      virtual_wan_id      = data.terraform_remote_state.vwan.outputs.virtual_wan_id
+      virtual_wan_id      = data.azurerm_virtual_wan.vwan.id
       tags                = var.tags
     }
   }
@@ -53,7 +42,7 @@ resource "azurerm_firewall" "hub" {
     virtual_hub_id = module.connectivity_virtual_hub.resource["hub"].id
   }
 
-  firewall_policy_id = data.terraform_remote_state.fwpolicy.outputs.firewall_policy_id
+  firewall_policy_id = data.azurerm_firewall_policy.fwpolicy.id
 
   tags = var.tags
 }
