@@ -36,6 +36,7 @@ concurrency:
 env:
   ARM_USE_OIDC: true
   ARM_USE_AZUREAD: true
+  ARM_OIDC_AUDIENCE: api://AzureADTokenExchange
   TF_IN_AUTOMATION: true
 
 jobs:
@@ -55,6 +56,11 @@ jobs:
     environment: ${{ matrix.env }}
 
     env:
+      ARM_CLIENT_ID: ${{ vars.ARM_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ vars.ARM_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ vars.ARM_SUBSCRIPTION_ID }}
+      TFSTATE_SUBSCRIPTION_ID: ${{ vars.TFSTATE_SUBSCRIPTION_ID }}
+
       TF_VAR_hub_subscription_id: ${{ vars.ARM_SUBSCRIPTION_ID }}
       TF_VAR_hub_tenant_id: ${{ vars.ARM_TENANT_ID }}
       TF_VAR_virtual_wan_subscription_id: ${{ vars.VIRTUAL_WAN_SUBSCRIPTION_ID }}
@@ -63,23 +69,50 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Azure login (OIDC)
-        uses: azure/login@v2
-        with:
-          client-id: ${{ vars.ARM_CLIENT_ID }}
-          tenant-id: ${{ vars.ARM_TENANT_ID }}
-          subscription-id: ${{ vars.ARM_SUBSCRIPTION_ID }}
-
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_wrapper: false
 
+      - name: Preflight (required variables)
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          missing=0
+          require() {
+            local key="$1"
+            local val="$2"
+            if [[ -z "${val}" ]]; then
+              echo "::error::Missing required GitHub Environment variable: ${key}"
+              missing=1
+            fi
+          }
+
+          require ARM_CLIENT_ID "${ARM_CLIENT_ID:-}"
+          require ARM_TENANT_ID "${ARM_TENANT_ID:-}"
+          require ARM_SUBSCRIPTION_ID "${ARM_SUBSCRIPTION_ID:-}"
+          require TFSTATE_SUBSCRIPTION_ID "${TFSTATE_SUBSCRIPTION_ID:-}"
+
+          if [[ "${missing}" -ne 0 ]]; then
+            echo ""
+            echo "Set these under: Repo Settings -> Environments -> ${{ matrix.env }} -> Variables"
+            exit 1
+          fi
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ env.ARM_CLIENT_ID }}
+          tenant-id: ${{ env.ARM_TENANT_ID }}
+          subscription-id: ${{ env.ARM_SUBSCRIPTION_ID }}
+          audience: ${{ env.ARM_OIDC_AUDIENCE }}
+
       - name: Terraform init
         run: |
           terraform init -input=false \
             -backend-config=environments/${{ matrix.env }}/backend.hcl \
-            -backend-config="subscription_id=${{ vars.TFSTATE_SUBSCRIPTION_ID }}"
+            -backend-config="subscription_id=${{ env.TFSTATE_SUBSCRIPTION_ID }}"
 
       - name: Terraform fmt check
         run: terraform fmt -check -recursive
@@ -93,7 +126,12 @@ jobs:
       - name: Save plan output
         if: always()
         shell: bash
-        run: terraform show -no-color tfplan > plan-${{ matrix.env }}.txt
+        run: |
+          if [[ -f tfplan ]]; then
+            terraform show -no-color tfplan > plan-${{ matrix.env }}.txt
+          else
+            echo "Plan file not generated (a previous step failed)." > plan-${{ matrix.env }}.txt
+          fi
 
       - name: Upload plan artifact
         if: always()
@@ -116,6 +154,11 @@ jobs:
     environment: ${{ matrix.env }}
 
     env:
+      ARM_CLIENT_ID: ${{ vars.ARM_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ vars.ARM_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ vars.ARM_SUBSCRIPTION_ID }}
+      TFSTATE_SUBSCRIPTION_ID: ${{ vars.TFSTATE_SUBSCRIPTION_ID }}
+
       TF_VAR_hub_subscription_id: ${{ vars.ARM_SUBSCRIPTION_ID }}
       TF_VAR_hub_tenant_id: ${{ vars.ARM_TENANT_ID }}
       TF_VAR_virtual_wan_subscription_id: ${{ vars.VIRTUAL_WAN_SUBSCRIPTION_ID }}
@@ -124,241 +167,50 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Azure login (OIDC)
-        uses: azure/login@v2
-        with:
-          client-id: ${{ vars.ARM_CLIENT_ID }}
-          tenant-id: ${{ vars.ARM_TENANT_ID }}
-          subscription-id: ${{ vars.ARM_SUBSCRIPTION_ID }}
-
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_wrapper: false
+
+      - name: Preflight (required variables)
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          missing=0
+          require() {
+            local key="$1"
+            local val="$2"
+            if [[ -z "${val}" ]]; then
+              echo "::error::Missing required GitHub Environment variable: ${key}"
+              missing=1
+            fi
+          }
+
+          require ARM_CLIENT_ID "${ARM_CLIENT_ID:-}"
+          require ARM_TENANT_ID "${ARM_TENANT_ID:-}"
+          require ARM_SUBSCRIPTION_ID "${ARM_SUBSCRIPTION_ID:-}"
+          require TFSTATE_SUBSCRIPTION_ID "${TFSTATE_SUBSCRIPTION_ID:-}"
+
+          if [[ "${missing}" -ne 0 ]]; then
+            echo ""
+            echo "Set these under: Repo Settings -> Environments -> ${{ matrix.env }} -> Variables"
+            exit 1
+          fi
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ env.ARM_CLIENT_ID }}
+          tenant-id: ${{ env.ARM_TENANT_ID }}
+          subscription-id: ${{ env.ARM_SUBSCRIPTION_ID }}
+          audience: ${{ env.ARM_OIDC_AUDIENCE }}
 
       - name: Terraform init
         run: |
           terraform init -input=false \
             -backend-config=environments/${{ matrix.env }}/backend.hcl \
-            -backend-config="subscription_id=${{ vars.TFSTATE_SUBSCRIPTION_ID }}"
+            -backend-config="subscription_id=${{ env.TFSTATE_SUBSCRIPTION_ID }}"
 
       - name: Terraform apply
         run: terraform apply -lock-timeout=10m -input=false -auto-approve -var-file=environments/${{ matrix.env }}/terraform.tfvars
-
-      - name: Terraform plan
-        working-directory: msft-vhub-dev
-        run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
-            terraform plan -lock=false -input=false -no-color -out=tfplan
-          elif [ "${{ github.event_name }}" = "pull_request" ]; then
-            terraform plan -lock=false -input=false -no-color -out=tfplan
-          else
-            terraform plan -input=false -no-color -out=tfplan
-          fi
-
-      - name: Ensure plan output exists
-        if: always()
-        working-directory: msft-vhub-dev
-        shell: bash
-        run: |
-          if [[ -f plan.txt ]]; then
-            exit 0
-          fi
-
-          if [[ -f tfplan ]]; then
-            terraform show -no-color tfplan > plan.txt
-            exit 0
-          fi
-
-          echo "Plan output not available (terraform plan did not produce a tfplan file)." > plan.txt
-
-      - name: Upload plan artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: tfplan-msft-vhub-dev
-          path: msft-vhub-dev/plan.txt
-          if-no-files-found: warn
-
-      - name: Comment plan on PR (summary)
-        if: always() && github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const stack = 'msft-vhub-dev';
-            const path = `${process.env.GITHUB_WORKSPACE}/${stack}/plan.txt`;
-            let plan = '';
-            try { plan = fs.readFileSync(path, 'utf8'); } catch (e) { plan = `Failed to read plan output: ${e.message}`; }
-            const max = 60000;
-            if (plan.length > max) plan = plan.slice(0, max) + `\n\n...truncated (${plan.length} chars)`;
-            const marker = `<!-- tfplan:${stack} -->`;
-            const body = `${marker}\n### Terraform plan: \`${stack}\`\n\n\`\`\`\n${plan}\n\`\`\``;
-            const { data: comments } = await github.rest.issues.listComments({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, per_page: 100 });
-            const existing = comments.find(c => (c.body || '').includes(marker));
-            if (existing) await github.rest.issues.updateComment({ owner: context.repo.owner, repo: context.repo.repo, comment_id: existing.id, body });
-            else await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body });
-
-  # ------------------------
-  # Apply jobs (main only)
-  # ------------------------
-
-  apply-vwan:
-    name: apply (msft-vwan-prod)
-    runs-on: ubuntu-latest
-    if: false
-
-    concurrency:
-      group: tfstate-${{ github.workflow }}-msft-vwan-prod
-      cancel-in-progress: false
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Azure login (OIDC)
-        uses: azure/login@v2
-        with:
-          client-id: ${{ env.ARM_CLIENT_ID }}
-          tenant-id: ${{ env.ARM_TENANT_ID }}
-          subscription-id: ${{ env.ARM_SUBSCRIPTION_ID }}
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_wrapper: false
-
-      - name: Terraform init
-        working-directory: msft-vwan-prod
-        run: terraform init -input=false
-
-      - name: Terraform apply
-        working-directory: msft-vwan-prod
-        run: terraform apply -lock-timeout=10m -input=false -auto-approve
-
-  apply-dev-fwpolicy:
-    name: apply (dev) fwpolicy
-    runs-on: ubuntu-latest
-    if: false
-
-    concurrency:
-      group: tfstate-${{ github.workflow }}-msft-fwpolicy-dev
-      cancel-in-progress: false
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Azure login (OIDC)
-        uses: azure/login@v2
-        with:
-          client-id: ${{ env.ARM_CLIENT_ID }}
-          tenant-id: ${{ env.ARM_TENANT_ID }}
-          subscription-id: ${{ env.ARM_SUBSCRIPTION_ID }}
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_wrapper: false
-
-      - name: Terraform init
-        working-directory: msft-fwpolicy-dev
-        run: terraform init -input=false
-
-      - name: Terraform apply
-        working-directory: msft-fwpolicy-dev
-        run: terraform apply -lock-timeout=10m -input=false -auto-approve
-
-  apply-dev-vhub:
-    name: apply (dev) vhub
-    runs-on: ubuntu-latest
-    if: false
-
-    concurrency:
-      group: tfstate-${{ github.workflow }}-msft-vhub-dev
-      cancel-in-progress: false
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Azure login (OIDC)
-        uses: azure/login@v2
-        with:
-          client-id: ${{ env.ARM_CLIENT_ID }}
-          tenant-id: ${{ env.ARM_TENANT_ID }}
-          subscription-id: ${{ env.ARM_SUBSCRIPTION_ID }}
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_wrapper: false
-
-      - name: Terraform init
-        working-directory: msft-vhub-dev
-        run: terraform init -input=false
-
-      - name: Terraform apply
-        working-directory: msft-vhub-dev
-        run: terraform apply -lock-timeout=10m -input=false -auto-approve
-
-  apply-prod-fwpolicy:
-    name: apply (prod) fwpolicy
-    runs-on: ubuntu-latest
-    if: false
-
-    concurrency:
-      group: tfstate-${{ github.workflow }}-msft-fwpolicy-prod
-      cancel-in-progress: false
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Azure login (OIDC)
-        uses: azure/login@v2
-        with:
-          client-id: ${{ env.ARM_CLIENT_ID }}
-          tenant-id: ${{ env.ARM_TENANT_ID }}
-          subscription-id: ${{ env.ARM_SUBSCRIPTION_ID }}
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_wrapper: false
-
-      - name: Terraform init
-        working-directory: msft-fwpolicy-prod
-        run: terraform init -input=false
-
-      - name: Terraform apply
-        working-directory: msft-fwpolicy-prod
-        run: terraform apply -lock-timeout=10m -input=false -auto-approve
-
-  apply-prod-vhub:
-    name: apply (prod) vhub
-    runs-on: ubuntu-latest
-    if: false
-
-    concurrency:
-      group: tfstate-${{ github.workflow }}-msft-vhub-prod
-      cancel-in-progress: false
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Azure login (OIDC)
-        uses: azure/login@v2
-        with:
-          client-id: ${{ env.ARM_CLIENT_ID }}
-          tenant-id: ${{ env.ARM_TENANT_ID }}
-          subscription-id: ${{ env.ARM_SUBSCRIPTION_ID }}
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_wrapper: false
-
-      - name: Terraform init
-        working-directory: msft-vhub-prod
-        run: terraform init -input=false
-
-      - name: Terraform apply
-        working-directory: msft-vhub-prod
-        run: terraform apply -lock-timeout=10m -input=false -auto-approve
