@@ -1,74 +1,140 @@
-## Disclaimer
-
 > [!IMPORTANT]
 > This repository uses **Azure Verified Modules (AVM)** and is intended as a reference implementation.
 > Any input values, defaults, and examples provided here are **samples only**.
->
-> You are responsible for reviewing and adapting the configuration to meet your organization’s requirements (security, networking, naming, regions, compliance, etc.) before using it in any environment.
+> Review and adapt the configuration to meet your organization’s requirements (security, networking, naming, regions, compliance, etc.) before using it.
 
 > [!NOTE]
-> AVM modules may introduce changes over time (including breaking changes). The maintainers of this repository are not responsible for upstream module changes.
-> For AVM-related bugs or feature requests, please raise issues with the relevant AVM module repository.
+> AVM modules may introduce changes over time (including breaking changes). For AVM bugs or feature requests, please raise issues with the relevant AVM module repository.
 
 # msft-eslz-connectivity
 
-## New (preferred) layout
+Terraform configuration to deploy a Virtual WAN based connectivity foundation using AVM modules.
 
-This repo now supports a **single root Terraform configuration** driven entirely by environment-specific tfvars.
+## What this deploys
+
+Per environment (dev/prod) this repo can deploy:
+
+- Resource groups (optional; managed via `resource_groups`)
+- Firewall policies + rule collection groups (tfvars-driven)
+- Virtual hubs (vHubs)
+- Optional secured hubs (Azure Firewall `AZFW_Hub` attached to a vHub)
+- Optional ExpressRoute gateways (in each vHub)
+- Optional ExpressRoute circuits (one or many; provider-based or ExpressRoute Direct)
+
+Virtual WAN (vWAN) is intended to be created **once** (typically in prod) and referenced from other environments.
+
+## Repo layout
 
 - `modules/`
-	- `modules/vwan`: Virtual WAN (AVM)
-	- `modules/fwpolicy`: Azure Firewall Policy + AKS egress baseline rules
-	- `modules/vhub`: Virtual Hub (AVM) + optional secured hub Azure Firewall (AZFW_Hub)
+	- `modules/vwan`: AVM Virtual WAN wrapper
+	- `modules/vhub`: AVM Virtual Hub wrapper + optional Azure Firewall
+	- `modules/fwpolicy`: Azure Firewall Policy + rule collection groups
+	- `modules/expressroute_gateway`: AVM ExpressRoute Gateway (vWAN/vHub) wrapper
+	- `modules/expressroute_circuit`: AVM ExpressRoute Circuit wrapper
 - `environments/`
 	- `environments/dev/backend.hcl` + `environments/dev/terraform.tfvars`
 	- `environments/prod/backend.hcl` + `environments/prod/terraform.tfvars`
 
-Key design points:
-- All instances are **tfvars-driven** (`virtual_hubs` and `firewall_policies` are maps).
-- vWAN is intended to be created **once** (typically in prod) and referenced from other envs.
-- No subscription/tenant IDs are hardcoded in Terraform code; authentication is expected via Azure CLI / OIDC / `ARM_*` env vars.
+## Prerequisites
 
-Multi-subscription support:
-- If your **hub resources** (vHub / Azure Firewall / Firewall Policy) and your **vWAN** live in different subscriptions, set:
-	- `hub_subscription_id` / `hub_tenant_id`
-	- `virtual_wan_subscription_id` / `virtual_wan_tenant_id` (optional; defaults to hub values)
+- Terraform `>= 1.9, < 2.0`
+- Azure permissions for the identity you use (Azure CLI locally, or GitHub OIDC in CI)
+- Existing remote state storage (Storage Account + Container) referenced by each `backend.hcl`
 
-Tip: keep IDs out of committed tfvars by passing them via environment variables, e.g. `TF_VAR_hub_subscription_id`.
+### Azure permissions (minimum guidance)
 
-Input conventions:
-- Prefer **imports** over "create flags". If something already exists and you want Terraform to manage it, import it into the environment state.
-- For migration/partial ownership:
-	- Use `resource_groups` for RGs you want Terraform to manage.
-	- Use `existing_resource_groups` for RGs you only want to data-lookup.
-	- Use `virtual_wan` (managed) **or** `existing_virtual_wan` (lookup) — exactly one must be set.
-	- Use `firewall_policies` for policies managed here; use `existing_firewall_policies` for lookup-only policies.
+The executing identity typically needs, at minimum:
 
-### How to run
+- On the hub subscription(s): permissions to create/read RGs, vHubs, firewalls, firewall policies, and optionally ExpressRoute resources.
+- On the vWAN subscription (if different): permissions to create/read vWAN (prod) and/or read vWAN (dev).
+- On the state subscription: permissions to read/write blob state (Storage Account).
+
+If you see `403` errors like `Microsoft.Resources/subscriptions/providers/read`, assign at least `Reader` at subscription scope plus appropriate contributor rights for the resources you manage.
+
+## Configuration model
+
+This repo uses a single root module with environment-specific tfvars.
+
+Key inputs:
+
+- `resource_groups` / `existing_resource_groups`
+- `virtual_wan` (managed) **or** `existing_virtual_wan` (lookup) — exactly one must be set
+- `virtual_hubs` map (each hub can include optional `firewall` and optional `expressroute_gateway`)
+- `firewall_policies` map
+- `expressroute_circuits` map (optional)
+
+### Multi-subscription support
+
+If your hub resources and vWAN live in different subscriptions, set:
+
+- `hub_subscription_id` / `hub_tenant_id`
+- `virtual_wan_subscription_id` / `virtual_wan_tenant_id` (optional; defaults to hub values)
+
+Tip: you can override tfvars without committing IDs by using environment variables, e.g. `TF_VAR_hub_subscription_id`.
+
+## How to run locally
 
 From the repo root:
-
-- Dev:
-	- `terraform init -backend-config=environments/dev/backend.hcl`
-	- `terraform plan -var-file=environments/dev/terraform.tfvars`
-	- `terraform apply -var-file=environments/dev/terraform.tfvars`
 
 - Prod:
 	- `terraform init -backend-config=environments/prod/backend.hcl`
 	- `terraform plan -var-file=environments/prod/terraform.tfvars`
 	- `terraform apply -var-file=environments/prod/terraform.tfvars`
 
-### State / migration notes
+- Dev:
+	- `terraform init -backend-config=environments/dev/backend.hcl`
+	- `terraform plan -var-file=environments/dev/terraform.tfvars`
+	- `terraform apply -var-file=environments/dev/terraform.tfvars`
 
-This refactor introduces **new state keys** under `msft-lz-connectivity/environments/{dev,prod}`.
+### Recommended apply order
 
-If you already deployed resources using the legacy stack folders:
-- Fastest path: **destroy legacy stacks**, then apply the new env configuration.
-- No-downtime path: **import** existing resources into the new env state (requires careful mapping of resource IDs).
+If dev references an existing vWAN (via `existing_virtual_wan`), run **prod first** so the vWAN exists, then run dev.
 
-> Tip: the `resource_groups` input supports `create=false` so you can data-lookup existing RGs while migrating.
+## How to run via GitHub Actions
 
-> Updated: the repo no longer uses `create=true/false`. Use `existing_resource_groups` (lookup) or import the RG into state if you want it managed.
+Workflow: `.github/workflows/terraform.yml`
+
+- `pull_request` to `main` runs **plan** for `dev` and `prod`.
+- `push` to `main` runs **plan + apply**.
+- `workflow_dispatch` supports `plan` or `apply`.
+
+The workflow uses `azure/login@v2` OIDC and expects repo variables (or defaults):
+
+- `ARM_CLIENT_ID`
+- `ARM_TENANT_ID`
+- `ARM_SUBSCRIPTION_ID` (used only for Azure login context; Terraform uses subscription IDs from tfvars)
+
+Make sure the GitHub OIDC app registration has federated credentials for this repo/branch.
+
+## ExpressRoute notes
+
+### ExpressRoute gateway (Virtual WAN)
+
+The vWAN ExpressRoute Gateway is created **inside the vHub** (no VNet required). Configure it per hub under:
+
+- `virtual_hubs.<hub>.expressroute_gateway` (name + `scale_units` + optional tags)
+
+### ExpressRoute circuits
+
+ExpressRoute circuits are created via `expressroute_circuits` (map), allowing multiple circuits per environment.
+
+Important operational note:
+
+1. Create the circuit first (no peerings / no connections)
+2. Share the **service key** with your provider and wait until the circuit shows **Provisioned**
+3. Then add `peerings` and/or `er_gw_connections`
+
+If you try to configure peerings before the circuit is provisioned, applies can fail.
+
+## Outputs
+
+Useful root outputs include:
+
+- `virtual_wan_id`
+- `virtual_hub_ids`
+- `virtual_hub_firewall_ids`
+- `expressroute_gateway_ids`
+- `expressroute_circuit_ids`
 
 ## Legacy stack layout (kept for reference)
 
