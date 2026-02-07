@@ -1,3 +1,11 @@
+###############################################
+# Resource groups
+#
+# This section defines the resource groups this environment will create and
+# then reference from other blocks (vWAN, vHub, firewall policy, ExpressRoute).
+#
+# Key = internal handle used by `resource_group_key` references.
+###############################################
 resource_groups = {
   prod_connectivity = {
     name     = "msft-prod-connectivity-rg"
@@ -18,6 +26,13 @@ resource_groups = {
   }
 }
 
+###############################################
+# Subscription / tenant targeting
+#
+# These IDs control where resources are created/looked up.
+# - Hub subscription: vHub, Azure Firewall, Firewall Policy, ExpressRoute.
+# - vWAN subscription: vWAN create/lookup (prod owns the shared vWAN).
+###############################################
 # Target subscription/tenant for hub resources (vHub, Azure Firewall, Firewall Policy, etc.)
 hub_subscription_id = "2f69b2b1-5fe0-487d-8c82-52f5edeb454e"
 hub_tenant_id       = "9a9712e7-1382-4528-8495-b52ae7688acb"
@@ -26,6 +41,13 @@ hub_tenant_id       = "9a9712e7-1382-4528-8495-b52ae7688acb"
 virtual_wan_subscription_id = "2f69b2b1-5fe0-487d-8c82-52f5edeb454e"
 virtual_wan_tenant_id       = "9a9712e7-1382-4528-8495-b52ae7688acb"
 
+###############################################
+# Virtual WAN (vWAN)
+#
+# Prod is the “source of truth” for the shared vWAN.
+# If the vWAN already exists, either import it into this env state, or switch
+# to lookup mode (see notes below).
+###############################################
 # In the target design, vWAN is created once (here in prod).
 # If the vWAN already exists, either:
 # - import it into this env state, or
@@ -47,6 +69,14 @@ virtual_wan = {
   }
 }
 
+###############################################
+# ExpressRoute circuits (optional)
+#
+# Circuits often require coordination with your service provider:
+# 1) Create the circuit (no peerings/connections)
+# 2) Share the service key with the provider and wait for Provisioned
+# 3) Add peerings and/or ER gateway connections afterwards
+###############################################
 # ExpressRoute circuits (optional).
 # Note: Circuits usually require coordination with your service provider.
 # It’s common to:
@@ -79,6 +109,12 @@ expressroute_circuits = {
   }
 }
 
+###############################################
+# Azure Firewall Policy + rules
+#
+# This section defines firewall policies and rule collection groups.
+# Rules are tfvars-driven to make egress/allow-lists easy to customize.
+###############################################
 firewall_policies = {
   prod = {
     name               = "msft-vhub-prod-firewall-policy"
@@ -198,6 +234,13 @@ firewall_policies = {
   }
 }
 
+###############################################
+# Virtual hubs (vHubs)
+#
+# Defines the vHub(s) for this environment and optionally attaches:
+# - Azure Firewall (Hub SKU)
+# - ExpressRoute gateway (Virtual WAN gateway inside the vHub)
+###############################################
 virtual_hubs = {
   prod = {
     name               = "msft-vhub-prod"
