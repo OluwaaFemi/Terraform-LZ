@@ -83,6 +83,45 @@ module "firewall_policies" {
   rule_collection_groups = try(each.value.rule_collection_groups, {})
 }
 
+module "expressroute_circuits" {
+  for_each = var.expressroute_circuits
+
+  source = "./modules/expressroute_circuit"
+
+  name                = each.value.name
+  location            = coalesce(try(each.value.location, null), local.rg[each.value.resource_group_key].location)
+  resource_group_name = local.rg[each.value.resource_group_key].name
+
+  sku = each.value.sku
+
+  service_provider_name = try(each.value.service_provider_name, null)
+  peering_location      = try(each.value.peering_location, null)
+  bandwidth_in_mbps     = try(each.value.bandwidth_in_mbps, null)
+
+  express_route_port_resource_id = try(each.value.express_route_port_resource_id, null)
+  bandwidth_in_gbps              = try(each.value.bandwidth_in_gbps, null)
+
+  allow_classic_operations = try(each.value.allow_classic_operations, false)
+  authorization_key        = try(each.value.authorization_key, null)
+
+  tags = merge(
+    local.rg[each.value.resource_group_key].tags,
+    try(each.value.tags, {})
+  )
+
+  exr_circuit_tags = try(each.value.exr_circuit_tags, null)
+
+  peerings                             = try(each.value.peerings, {})
+  express_route_circuit_authorizations = try(each.value.express_route_circuit_authorizations, {})
+  er_gw_connections                    = try(each.value.er_gw_connections, {})
+  vnet_gw_connections                  = try(each.value.vnet_gw_connections, {})
+  circuit_connections                  = try(each.value.circuit_connections, {})
+  diagnostic_settings                  = try(each.value.diagnostic_settings, {})
+  role_assignments                     = try(each.value.role_assignments, {})
+  lock                                 = try(each.value.lock, null)
+  enable_telemetry                     = try(each.value.enable_telemetry, true)
+}
+
 data "azurerm_firewall_policy" "existing" {
   for_each = var.existing_firewall_policies
 
