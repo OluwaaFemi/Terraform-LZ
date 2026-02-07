@@ -23,6 +23,34 @@ existing_virtual_wan = {
   resource_group_name = "msft-prod-connectivity-rg"
 }
 
+# ExpressRoute circuits (optional).
+# If you want dev to also create circuits, define them here.
+expressroute_circuits = {
+  dev_primary = {
+    name               = "msft-dev-sea-er-circuit-01"
+    resource_group_key = "dev_hub"
+    location           = "southeastasia"
+
+    sku = {
+      tier   = "Premium"
+      family = "MeteredData"
+    }
+
+    service_provider_name = "SingTel Domestic"
+    peering_location      = "Singapore"
+
+    # 1Gbps
+    bandwidth_in_mbps = 1000
+
+    enable_telemetry = false
+
+    tags = {
+      environment = "dev"
+      workload    = "msft-expressroute"
+    }
+  }
+}
+
 firewall_policies = {
   dev = {
     name               = "msft-vhub-dev-firewall-policy"

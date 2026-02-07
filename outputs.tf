@@ -23,3 +23,8 @@ output "expressroute_gateway_ids" {
   value       = { for hub_key, gw_mod in module.expressroute_gateways : hub_key => gw_mod.id }
 }
 
+output "expressroute_circuit_ids" {
+  description = "Map of ExpressRoute Circuit resource IDs by key."
+  value       = { for circuit_key, circuit_mod in module.expressroute_circuits : circuit_key => circuit_mod.resource_id }
+}
+

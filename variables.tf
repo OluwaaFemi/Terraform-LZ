@@ -112,6 +112,55 @@ variable "existing_firewall_policies" {
   default = {}
 }
 
+variable "expressroute_circuits" {
+  description = "ExpressRoute Circuits to create (optional). Each circuit is created in a specified resource group via resource_group_key."
+
+  type = map(object({
+    name               = string
+    resource_group_key = string
+
+    location = optional(string)
+
+    sku = object({
+      tier   = string
+      family = string
+    })
+
+    # Provider-based circuits.
+    service_provider_name = optional(string)
+    peering_location      = optional(string)
+    bandwidth_in_mbps     = optional(number)
+
+    # ExpressRoute Direct circuits.
+    express_route_port_resource_id = optional(string)
+    bandwidth_in_gbps              = optional(number)
+
+    allow_classic_operations = optional(bool, false)
+    authorization_key        = optional(string)
+
+    tags             = optional(map(string))
+    exr_circuit_tags = optional(map(string))
+
+    # Advanced (optional) - passed through to AVM module.
+    peerings                             = optional(any, {})
+    express_route_circuit_authorizations = optional(any, {})
+    er_gw_connections                    = optional(any, {})
+    vnet_gw_connections                  = optional(any, {})
+    circuit_connections                  = optional(any, {})
+    diagnostic_settings                  = optional(any, {})
+    role_assignments                     = optional(any, {})
+    lock                                 = optional(any)
+    enable_telemetry                     = optional(bool, true)
+  }))
+
+  default = {}
+
+  validation {
+    condition     = alltrue([for k, c in var.expressroute_circuits : contains(keys(merge(var.resource_groups, var.existing_resource_groups)), c.resource_group_key)])
+    error_message = "Each expressroute_circuits[*].resource_group_key must exist in resource_groups or existing_resource_groups."
+  }
+}
+
 variable "virtual_hubs" {
   description = "Virtual hubs keyed by logical name. Each hub is created and can optionally have an Azure Firewall attached."
 

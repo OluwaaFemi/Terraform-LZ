@@ -47,6 +47,38 @@ virtual_wan = {
   }
 }
 
+# ExpressRoute circuits (optional).
+# Note: Circuits usually require coordination with your service provider.
+# It’s common to:
+# 1) Create the circuit first (without peerings/connections),
+# 2) Share the service key with the provider, then
+# 3) Add peerings/connections only after the circuit is provisioned.
+expressroute_circuits = {
+  prod_primary = {
+    name               = "msft-prod-sea-er-circuit-01"
+    resource_group_key = "prod_hub"
+    location           = "southeastasia"
+
+    sku = {
+      tier   = "Premium"
+      family = "MeteredData"
+    }
+
+    service_provider_name = "SingTel Domestic"
+    peering_location      = "Singapore"
+
+    # 1Gbps
+    bandwidth_in_mbps = 1000
+
+    enable_telemetry = false
+
+    tags = {
+      environment = "prod"
+      workload    = "msft-expressroute"
+    }
+  }
+}
+
 firewall_policies = {
   prod = {
     name               = "msft-vhub-prod-firewall-policy"
