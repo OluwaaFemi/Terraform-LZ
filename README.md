@@ -39,7 +39,7 @@ Virtual WAN (vWAN) is intended to be created **once** (typically in prod) and re
 
 The architecture diagram is shown below:
 
-![msft-eslz-connectivity architecture](./eslz-connectivity-view.png)
+![msft-eslz-connectivity architecture](./eslz-connectivity-view-v2.png)
 
 ## Prerequisites
 
