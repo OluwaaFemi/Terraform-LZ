@@ -1,10 +1,20 @@
-existing_resource_groups = {
+resource_groups = {
   prod_connectivity = {
-    name = "msft-prod-connectivity-rg"
+    name     = "msft-prod-connectivity-rg"
+    location = "southeastasia"
+    tags = {
+      environment = "prod"
+      workload    = "msft-vwan"
+    }
   }
 
   prod_hub = {
-    name = "msft-vhub-prod-rg"
+    name     = "msft-vhub-prod-rg"
+    location = "southeastasia"
+    tags = {
+      environment = "prod"
+      workload    = "msft-vhub"
+    }
   }
 }
 
