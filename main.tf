@@ -146,35 +146,74 @@ module "alz_connectivity" {
   }
 }
 
-module "virtual_hubs" {
-  for_each = local.use_root_wan_module ? {} : local.virtual_hubs_effective
-
-  source = "./modules/vhub"
-
-  name                = each.value.name
-  location            = each.value.location
-  resource_group_name = each.value.resource_group_name
-  address_prefix      = each.value.address_prefix
-
-  virtual_wan_id = local.virtual_wan_id
-
-  tags = each.value.tags
-
-  create_firewall   = each.value.firewall != null
-  firewall_name     = try(each.value.firewall.name, null)
-  firewall_sku_tier = coalesce(try(each.value.firewall.sku_tier, null), "Standard")
-
-  firewall_policy_id = each.value.firewall != null ? coalesce(
-    try(each.value.firewall.firewall_policy_id, null),
-    try(local.firewall_policy_ids[each.value.firewall.firewall_policy_key], null)
-  ) : null
-
-  firewall_extra_tags = each.value.firewall != null ? try(each.value.firewall.tags, {}) : {}
+locals {
+  virtual_hub_ids = local.use_root_wan_module ? module.alz_connectivity[0].virtual_hub_resource_ids : module.virtual_hubs_dev.resource_id
+  virtual_hub_firewall_ids = local.use_root_wan_module ? module.alz_connectivity[0].firewall_resource_ids : {
+    for hub_key, hub in local.virtual_hubs_effective : hub_key => try(module.hub_firewalls_dev[hub_key].resource_id, null)
+  }
 }
 
-locals {
-  virtual_hub_ids          = local.use_root_wan_module ? module.alz_connectivity[0].virtual_hub_resource_ids : { for hub_key, hub_mod in module.virtual_hubs : hub_key => hub_mod.hub_id }
-  virtual_hub_firewall_ids = local.use_root_wan_module ? module.alz_connectivity[0].firewall_resource_ids : { for hub_key, hub_mod in module.virtual_hubs : hub_key => hub_mod.firewall_id }
+check "firewall_policy_required" {
+  assert {
+    condition = alltrue([
+      for hub_key, hub in local.virtual_hubs_effective : (
+        hub.firewall == null || coalesce(
+          try(hub.firewall.firewall_policy_id, null),
+          try(local.firewall_policy_ids[hub.firewall.firewall_policy_key], null)
+        ) != null
+      )
+    ])
+    error_message = "When a hub has firewall enabled, firewall_policy_id (or firewall_policy_key) must be provided."
+  }
+}
+
+module "virtual_hubs_dev" {
+  source  = "Azure/avm-ptn-alz-connectivity-virtual-wan/azurerm//modules/virtual-hub"
+  version = "0.13.5"
+
+  virtual_hubs = local.use_root_wan_module ? {} : {
+    for hub_key, hub in local.virtual_hubs_effective : hub_key => {
+      name                = hub.name
+      location            = hub.location
+      resource_group_name = hub.resource_group_name
+      address_prefix      = hub.address_prefix
+      virtual_wan_id      = local.virtual_wan_id
+      tags                = hub.tags
+    }
+  }
+}
+
+module "hub_firewalls_dev" {
+  for_each = local.use_root_wan_module ? {} : {
+    for hub_key, hub in local.virtual_hubs_effective : hub_key => hub
+    if hub.firewall != null
+  }
+
+  source  = "Azure/avm-res-network-azurefirewall/azurerm"
+  version = "0.4.0"
+
+  name                = coalesce(try(each.value.firewall.name, null), "${each.value.name}-firewall")
+  location            = each.value.location
+  resource_group_name = each.value.resource_group_name
+
+  firewall_sku_name = "AZFW_Hub"
+  firewall_sku_tier = coalesce(try(each.value.firewall.sku_tier, null), "Standard")
+
+  # Avoid forcing replacement for existing zone-less firewalls.
+  firewall_zones = []
+
+  firewall_virtual_hub = {
+    virtual_hub_id = module.virtual_hubs_dev.resource[each.key].id
+  }
+
+  firewall_policy_id = coalesce(
+    try(each.value.firewall.firewall_policy_id, null),
+    try(local.firewall_policy_ids[each.value.firewall.firewall_policy_key], null)
+  )
+
+  tags = merge(each.value.tags, try(each.value.firewall.tags, {}))
+
+  enable_telemetry = false
 }
 
 module "private_dns_resolvers" {

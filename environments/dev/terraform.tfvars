@@ -8,7 +8,7 @@
 ###############################################
 resource_groups = {
   dev_hub = {
-    name     = "msft-vhub-dev-rg"
+    name     = "msft-connectivity-dev-sea-rg"
     location = "southeastasia"
     tags = {
       environment = "dev"
@@ -87,7 +87,7 @@ expressroute_circuits = {
 ###############################################
 firewall_policies = {
   dev = {
-    name               = "msft-vhub-dev-firewall-policy"
+    name               = "msft-vhub-dev-sea-firewall-policy"
     resource_group_key = "dev_hub"
     location           = "southeastasia"
     tags = {
@@ -179,7 +179,7 @@ firewall_policies = {
 ###############################################
 virtual_hubs = {
   dev = {
-    name               = "msft-vhub-dev"
+    name               = "msft-vhub-dev-sea"
     resource_group_key = "dev_hub"
     location           = "southeastasia"
     address_prefix     = "192.168.0.0/20"
@@ -190,12 +190,12 @@ virtual_hubs = {
     }
 
     firewall = {
-      name                = "msft-vhub-dev-firewall"
+      name                = "msft-vhub-dev-sea-firewall"
       firewall_policy_key = "dev"
     }
 
     expressroute_gateway = {
-      name        = "msft-vhub-dev-ergw"
+      name        = "msft-vhub-dev-sea-ergw"
       scale_units = 1
     }
 

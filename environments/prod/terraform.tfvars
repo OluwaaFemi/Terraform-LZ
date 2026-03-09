@@ -20,7 +20,7 @@ resource_groups = {
   }
 
   prod_hub = {
-    name     = "msft-vhub-prod-sea-rg"
+    name     = "msft-connectivity-prod-sea-rg"
     location = "southeastasia"
     tags = {
       environment = "prod"
@@ -32,7 +32,7 @@ resource_groups = {
   # Europe (westeurope)
   ###############################################
   prod_hub_eu = {
-    name     = "msft-vhub-prod-eu-rg"
+    name     = "msft-connectivity-prod-eu-rg"
     location = "westeurope"
     tags = {
       environment = "prod"
