@@ -23,17 +23,16 @@ Per environment (dev/prod) this repo can deploy:
 - Optional ExpressRoute circuits (one or many; provider-based or ExpressRoute Direct)
 - Optional Site-to-Site VPN (S2S VPN Gateway, VPN Sites, and Connections) per hub
 
-Virtual WAN (vWAN) is intended to be created **once** (typically in prod) and referenced from other environments.
+Virtual WAN (vWAN) is intended to be created **once** (in `prod`) and referenced from `dev`.
 
 ## Repo layout
 
 - `modules/`
-	- `modules/vwan`: AVM Virtual WAN wrapper
-	- `modules/vhub`: AVM Virtual Hub wrapper + optional Azure Firewall
 	- `modules/fwpolicy`: Azure Firewall Policy + rule collection groups
 	- `modules/expressroute_gateway`: AVM ExpressRoute Gateway (vWAN/vHub) wrapper
 	- `modules/expressroute_circuit`: AVM ExpressRoute Circuit wrapper
 	- `modules/site_to_site_vpn`: AVM S2S VPN Gateway + VPN Site + Connection wrapper
+	- `modules/private_dns_resolver`: Azure DNS Private Resolver hosted in a per-hub sidecar VNet
 - `environments/`
 	- `environments/dev/backend.hcl` + `environments/dev/terraform.tfvars`
 	- `environments/prod/backend.hcl` + `environments/prod/terraform.tfvars`
@@ -55,7 +54,7 @@ The architecture diagram is shown below:
 The executing identity typically needs, at minimum:
 
 - On the hub subscription(s): permissions to create/read RGs, vHubs, firewalls, firewall policies, and optionally ExpressRoute resources.
-- On the vWAN subscription (if different): permissions to create/read vWAN (prod) and/or read vWAN (dev).
+- On the vWAN subscription (if different): permissions to create/read vWAN.
 - On the state subscription: permissions to read/write blob state (Storage Account).
 
 If you see `403` errors like `Microsoft.Resources/subscriptions/providers/read`, assign at least `Reader` at subscription scope plus appropriate contributor rights for the resources you manage.
@@ -68,13 +67,14 @@ There are two distinct “permission planes” you must satisfy:
 
 - **Azure control-plane RBAC** (ARM): create/update/read Azure resources (vWAN/vHub/Firewall/etc).
 - **Storage data-plane RBAC** (Blob): read/write Terraform remote state in the storage account container referenced by `environments/<stack>/backend.hcl`.
+- **Storage data-plane RBAC** (Blob): read/write Terraform remote state in the storage account container referenced by `environments/<stack>/backend.hcl`.
 
 #### Minimum Azure RBAC roles (typical)
 
 Pick the narrowest scopes you can. Common starting point:
 
 - On the **hub subscription(s)** (or the specific RGs): `Contributor`
-- On the **vWAN subscription** (or vWAN RG): `Contributor` (or `Reader` if the vWAN is pre-existing and you only reference it)
+- On the **vWAN subscription** (or vWAN RG): `Contributor` (or `Reader` in dev if you only look up the vWAN)
 - On the **state storage account scope** (or RG): `Storage Blob Data Contributor`
 
 Notes:
@@ -126,7 +126,7 @@ From the repo root:
 
 ### Recommended apply order
 
-If dev references an existing vWAN (via `existing_virtual_wan`), run **prod first** so the vWAN exists, then run dev.
+Run **prod first** so the vWAN exists, then run dev.
 
 ## How to run via GitHub Actions
 
@@ -134,7 +134,7 @@ Workflow: `.github/workflows/terraform.yml`
 
 - `pull_request` to `main` runs **plan** for `dev` and `prod`.
 - `push` to `main` runs **plan + apply**.
-- `workflow_dispatch` supports `plan` or `apply`.
+- `workflow_dispatch` supports `plan` or `apply` for `dev`, `prod`, or `both`.
 
 The workflow uses `azure/login@v2` OIDC and expects repo variables (or defaults):
 

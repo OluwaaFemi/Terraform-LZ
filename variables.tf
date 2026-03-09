@@ -23,7 +23,7 @@ variable "hub_tenant_id" {
 }
 
 variable "virtual_wan_subscription_id" {
-  description = "Optional subscription ID to use for Virtual WAN create/lookup. Set this when the vWAN lives in a different subscription than the hub resources (e.g., dev references a prod-owned vWAN). Defaults to hub_subscription_id when unset."
+  description = "Optional subscription ID to use for Virtual WAN create/lookup. Set this when the vWAN lives in a different subscription than the hub resources. Defaults to hub_subscription_id when unset."
   type        = string
   default     = null
 }
@@ -45,7 +45,7 @@ variable "existing_resource_groups" {
 }
 
 variable "virtual_wan" {
-  description = "Virtual WAN managed by Terraform (created in this state). Set to null if you want to reference an existing VWAN via existing_virtual_wan."
+  description = "Virtual WAN managed by Terraform (created in this environment's state)."
 
   type = object({
     name               = string
