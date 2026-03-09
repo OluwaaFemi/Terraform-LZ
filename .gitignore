@@ -10,6 +10,8 @@ crash.*.log
 
 # Terraform plans
 *.tfplan
+tfplan
+tfplan-*
 
 # Override files
 override.tf

@@ -20,7 +20,7 @@ resource_groups = {
   }
 
   prod_hub = {
-    name     = "msft-vhub-prod-rg"
+    name     = "msft-vhub-prod-sea-rg"
     location = "southeastasia"
     tags = {
       environment = "prod"
@@ -135,7 +135,7 @@ firewall_policies = {
   # Southeast Asia (southeastasia)
   ###############################################
   prod = {
-    name               = "msft-vhub-prod-firewall-policy"
+    name               = "msft-vhub-prod-sea-firewall-policy"
     resource_group_key = "prod_hub"
     location           = "southeastasia"
     tags = {
@@ -381,7 +381,7 @@ virtual_hubs = {
   # Southeast Asia (southeastasia)
   ###############################################
   prod = {
-    name               = "msft-vhub-prod"
+    name               = "msft-vhub-prod-sea"
     resource_group_key = "prod_hub"
     location           = "southeastasia"
     address_prefix     = "10.2.0.0/20"
@@ -392,12 +392,12 @@ virtual_hubs = {
     }
 
     firewall = {
-      name                = "msft-vhub-prod-firewall"
+      name                = "msft-vhub-prod-sea-firewall"
       firewall_policy_key = "prod"
     }
 
     expressroute_gateway = {
-      name        = "msft-vhub-prod-ergw"
+      name        = "msft-vhub-prod-sea-ergw"
       scale_units = 1
     }
 
@@ -406,7 +406,7 @@ virtual_hubs = {
     site_to_site_vpn = {
       vpn_gateways = {
         prod = {
-          name       = "msft-vhub-prod-s2s-gw"
+          name       = "msft-vhub-prod-sea-s2s-gw"
           scale_unit = 1
         }
       }
@@ -430,7 +430,7 @@ virtual_hubs = {
       # Example (uncomment when ready):
       # vpn_site_connections = {
       #   prod = {
-      #     name              = "msft-vhub-prod-to-onprem"
+      #     name              = "msft-vhub-prod-sea-to-onprem"
       #     vpn_gateway_key   = "prod"
       #     vpn_site_key      = "prod"
       #     vpn_site_link_name = "prod-link-1"
@@ -445,10 +445,10 @@ virtual_hubs = {
     # Optional: Private DNS Resolver (creates sidecar VNet + vHub connection + resolver)
     private_dns_resolver = {
       # resource_group_key = "prod_dns"  # optional: separate RG key for DNS resources
-      name = "msft-pdr-prod"
+      name = "msft-pdr-prod-sea"
 
       sidecar_virtual_network = {
-        name          = "msft-vnet-prod-dns"
+        name          = "msft-vnet-prod-sea-dns"
         address_space = ["10.2.16.0/24"]
       }
 
