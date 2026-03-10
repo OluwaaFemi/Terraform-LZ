@@ -194,6 +194,7 @@ firewall_policies = {
                   "*.securitycenter.windows.com",
                   "*.cloud.defender.microsoft.com",
                   "*.hcp.southeastasia.azmk8s.io",
+                  "*.microsoft.com",
                   "southeastasia.handler.control.monitor.azure.com",
                   "southeastasia.dp.kubernetesconfiguration.azure.com",
                 ]
