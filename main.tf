@@ -259,7 +259,7 @@ module "alz_connectivity" {
         } if connection.vpn_gateway_key == local.s2s_vpn_gateway_key_by_hub[hub_key]
       } : {}
 
-      private_dns_zones = hub.private_dns_zones != null ? hub.private_dns_zones : {}
+      private_dns_zones = hub.private_dns_zones != null ? hub.private_dns_zones : null
 
       sidecar_virtual_network = hub.private_dns_resolver != null ? {
         name          = coalesce(try(hub.private_dns_resolver.sidecar_virtual_network.name, null), "${coalesce(try(hub.private_dns_resolver.name, null), "${hub.name}-pdr")}-sidecar")

@@ -495,6 +495,9 @@ virtual_hubs = {
     # EU hub will, by default, only create the regional zones ({regionName}/{regionCode}).
     private_dns_zones = {
       auto_registration_zone_enabled = false
+      private_link_private_dns_zones_regex_filter = {
+        enabled = false
+      }
     }
   }
 
@@ -624,6 +627,10 @@ virtual_hubs = {
     # For non-primary hubs, AVM defaults to creating only regional zones ({regionName}/{regionCode}).
     private_dns_zones = {
       auto_registration_zone_enabled = false
+      private_link_private_dns_zones_regex_filter = {
+        enabled      = true
+        regex_filter = "{regionName}|{regionCode}"
+      }
     }
   }
 }
