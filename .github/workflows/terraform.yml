@@ -75,8 +75,29 @@ jobs:
       - name: Terraform fmt check
         run: terraform fmt -check -recursive
 
-      - name: Terraform init
-        run: terraform init -input=false -backend-config=environments/prod/backend.hcl
+      - name: Terraform init (retry)
+        shell: bash
+        run: |
+          set -u
+
+          max_attempts=5
+          attempt=1
+          while true; do
+            echo "terraform init attempt ${attempt}/${max_attempts}"
+            if terraform init -input=false -backend-config=environments/prod/backend.hcl; then
+              break
+            fi
+
+            if [[ ${attempt} -ge ${max_attempts} ]]; then
+              echo "terraform init failed after ${max_attempts} attempts"
+              exit 1
+            fi
+
+            sleep_seconds=$((attempt * 20))
+            echo "Retrying in ${sleep_seconds}s..."
+            sleep "${sleep_seconds}"
+            attempt=$((attempt + 1))
+          done
 
       - name: Terraform validate
         run: terraform validate
@@ -174,5 +195,24 @@ jobs:
 
           echo "=== Applying prod ==="
           rm -rf .terraform
-          terraform init -input=false -reconfigure -backend-config="environments/prod/backend.hcl"
+
+          max_attempts=5
+          attempt=1
+          while true; do
+            echo "terraform init attempt ${attempt}/${max_attempts}"
+            if terraform init -input=false -reconfigure -backend-config="environments/prod/backend.hcl"; then
+              break
+            fi
+
+            if [[ ${attempt} -ge ${max_attempts} ]]; then
+              echo "terraform init failed after ${max_attempts} attempts"
+              exit 1
+            fi
+
+            sleep_seconds=$((attempt * 20))
+            echo "Retrying in ${sleep_seconds}s..."
+            sleep "${sleep_seconds}"
+            attempt=$((attempt + 1))
+          done
+
           terraform apply -lock-timeout=10m -input=false -auto-approve -var-file="environments/prod/terraform.tfvars"
