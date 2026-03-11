@@ -39,28 +39,16 @@ locals {
 }
 
 locals {
-  expressroute_gateway_hub_keys = sort([
-    for hub_key, hub in var.virtual_hubs : hub_key
-    if try(hub.enabled_resources.virtual_network_gateway_express_route, false)
-  ])
-
   expressroute_gateway_ids_by_name = {
     for gw in coalescelist(try(module.alz_connectivity[0].express_route_gateway_resources, []), []) :
     gw.name => gw.id
   }
 
   expressroute_gateway_ids_by_hub_key = {
-    for hub_key in local.expressroute_gateway_hub_keys :
-    hub_key => lookup(
-      local.expressroute_gateway_ids_by_name,
-      try(var.virtual_hubs[hub_key].virtual_network_gateways.express_route.name, ""),
-      null
-    )
-    if lookup(
-      local.expressroute_gateway_ids_by_name,
-      try(var.virtual_hubs[hub_key].virtual_network_gateways.express_route.name, ""),
-      null
-    ) != null
+    for hub_key, hub in var.virtual_hubs :
+    hub_key => lookup(local.expressroute_gateway_ids_by_name, try(hub.virtual_network_gateways.express_route.name, ""), null)
+    if try(hub.enabled_resources.virtual_network_gateway_express_route, false)
+    && lookup(local.expressroute_gateway_ids_by_name, try(hub.virtual_network_gateways.express_route.name, ""), null) != null
   }
 
   expressroute_gateway_diagnostic_settings = {
