@@ -102,12 +102,6 @@ resource "azurerm_monitor_diagnostic_setting" "expressroute_gateway" {
   target_resource_id         = each.value.expressroute_gateway_id
   log_analytics_workspace_id = each.value.workspace_id
 
-  log_analytics_destination_type = "Dedicated"
-
-  enabled_log {
-    category_group = "allLogs"
-  }
-
   metric {
     category = "AllMetrics"
     enabled  = true
