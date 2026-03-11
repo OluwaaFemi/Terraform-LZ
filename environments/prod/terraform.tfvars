@@ -96,6 +96,34 @@ firewall_log_analytics_workspaces = {
 }
 
 ###############################################
+# Monitoring (ExpressRoute Gateway)
+#
+# Creates one dedicated Log Analytics Workspace per vHub ExpressRoute gateway
+# and wires ExpressRoute gateway diagnostics (allLogs + AllMetrics) to it.
+###############################################
+expressroute_gateway_log_analytics_workspaces = {
+  # Southeast Asia (southeastasia) - vHub key: prod
+  prod = {
+    name               = "msft-prod-sea-ergw-law"
+    resource_group_key = "prod_hub"
+    tags = {
+      environment = "prod"
+      workload    = "msft-ergw-law"
+    }
+  }
+
+  # Europe (westeurope) - vHub key: prod_eu
+  prod_eu = {
+    name               = "msft-prod-eu-ergw-law"
+    resource_group_key = "prod_hub_eu"
+    tags = {
+      environment = "prod"
+      workload    = "msft-ergw-law"
+    }
+  }
+}
+
+###############################################
 # Virtual WAN (vWAN)
 #
 # Prod is the “source of truth” for the shared vWAN.

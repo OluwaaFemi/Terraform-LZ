@@ -203,3 +203,21 @@ variable "firewall_log_analytics_workspaces" {
   }
 }
 
+variable "expressroute_gateway_log_analytics_workspaces" {
+  description = "(Optional) Log Analytics Workspaces to create (via AVM) for ExpressRoute gateway diagnostics. Key this map by virtual hub key (e.g., 'prod', 'prod_eu') so the workspace can be attached to the matching ExpressRoute gateway."
+
+  type = map(object({
+    name               = string
+    resource_group_key = string
+    location           = optional(string)
+    tags               = optional(map(string), {})
+  }))
+
+  default = {}
+
+  validation {
+    condition     = alltrue([for k, ws in var.expressroute_gateway_log_analytics_workspaces : contains(keys(merge(var.resource_groups, var.existing_resource_groups)), ws.resource_group_key)])
+    error_message = "Each expressroute_gateway_log_analytics_workspaces[*].resource_group_key must exist in resource_groups or existing_resource_groups."
+  }
+}
+
