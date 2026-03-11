@@ -5,6 +5,11 @@
 # then reference from other blocks (vWAN, vHub, firewall policy, ExpressRoute).
 #
 # Key = internal handle used by `resource_group_key` references.
+#
+# Optional vs baseline
+# - Baseline in most deployments: `virtual_wan_settings` + `virtual_hubs`.
+# - Optional: everything else (firewall policy/rules, ExpressRoute circuits,
+#   monitoring workspaces, etc.) can be omitted or left empty to disable.
 ###############################################
 resource_groups = {
   ###############################################
@@ -72,6 +77,10 @@ tags = {
 #
 # Creates one dedicated Log Analytics Workspace per vHub firewall
 # and wires Azure Firewall diagnostics (allLogs + AllMetrics) to it.
+#
+# Optional:
+# - Omit this block (or set it to `{}`) to avoid creating firewall monitoring.
+# - Map keys must match the `virtual_hubs` hub keys (e.g., `prod`, `prod_eu`).
 ###############################################
 firewall_log_analytics_workspaces = {
   # Southeast Asia (southeastasia) - vHub key: prod
@@ -99,7 +108,15 @@ firewall_log_analytics_workspaces = {
 # Monitoring (ExpressRoute Gateway)
 #
 # Creates one dedicated Log Analytics Workspace per vHub ExpressRoute gateway
-# and wires ExpressRoute gateway diagnostics (allLogs + AllMetrics) to it.
+# and wires ExpressRoute gateway diagnostics (AllMetrics) to it.
+#
+# Optional:
+# - Omit this block (or set it to `{}`) to avoid creating ExpressRoute gateway monitoring.
+# - Map keys must match the `virtual_hubs` hub keys (e.g., `prod`, `prod_eu`).
+#
+# Note: ExpressRoute Gateway diagnostic categories can vary by resource type.
+# For vWAN ExpressRoute Gateways, Azure currently exposes `AllMetrics` and may
+# not expose log categories.
 ###############################################
 expressroute_gateway_log_analytics_workspaces = {
   # Southeast Asia (southeastasia) - vHub key: prod

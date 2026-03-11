@@ -14,14 +14,20 @@ Terraform configuration to deploy a Virtual WAN based connectivity foundation us
 
 This repo can deploy:
 
-- Resource groups (optional; managed via `resource_groups`)
-- Firewall policies + rule collection groups (tfvars-driven)
-- Virtual hubs (vHubs)
-- Optional secured hubs (Azure Firewall `AZFW_Hub` attached to a vHub)
-- Optional Private DNS Resolver (Azure DNS Private Resolver) hosted in a per-hub sidecar VNet
-- Optional ExpressRoute gateways (in each vHub)
-- Optional ExpressRoute circuits (one or many; provider-based or ExpressRoute Direct)
-- Optional Site-to-Site VPN (S2S VPN Gateway, VPN Sites, and Connections) per hub
+- Baseline (typically deployed):
+	- Virtual WAN (vWAN) (create or lookup) + optional DDoS Protection Plan configuration
+	- Virtual hubs (vHubs)
+
+- Optional (enabled via tfvars):
+	- Resource groups (managed via `resource_groups`)
+	- Firewall policies + rule collection groups (tfvars-driven)
+	- Secured hubs (Azure Firewall `AZFW_Hub` attached to a vHub)
+	- Monitoring for Azure Firewall (dedicated Log Analytics Workspace per hub + diagnostic settings)
+	- Private DNS Resolver (Azure DNS Private Resolver) hosted in a per-hub sidecar VNet
+	- ExpressRoute gateways (in each vHub)
+	- Monitoring for ExpressRoute gateways (dedicated Log Analytics Workspace per hub + diagnostic settings/metrics)
+	- ExpressRoute circuits (one or many; provider-based or ExpressRoute Direct)
+	- Site-to-Site VPN (S2S VPN Gateway, VPN Sites, and Connections) per hub
 
 ## Repo layout
 
@@ -35,7 +41,7 @@ This repo can deploy:
 
 The architecture diagram is shown below:
 
-![msft-eslz-connectivity architecture](./eslz-connectivity-v2.png)
+![msft-eslz-connectivity architecture](./eslz-connectivity-v3.png)
 
 ## Prerequisites
 
