@@ -65,7 +65,7 @@ resource "azurerm_monitor_diagnostic_setting" "expressroute_gateway" {
     }
     if contains(keys(var.virtual_hubs), hub_key)
     && try(var.virtual_hubs[hub_key].enabled_resources.virtual_network_gateway_express_route, false)
-    && lookup({ for gw in coalescelist(try(module.alz_connectivity[0].express_route_gateway_resources, []), []) : gw.name => gw.id }, try(var.virtual_hubs[hub_key].virtual_network_gateways.express_route.name, ""), null) != null
+    && try(var.virtual_hubs[hub_key].virtual_network_gateways.express_route.name, "") != ""
   }
 
   provider = azurerm.wan
