@@ -54,12 +54,12 @@ resource_groups = {
 # - vWAN subscription: vWAN create/lookup (prod owns the shared vWAN).
 ###############################################
 # Target subscription/tenant for hub resources (vHub, Azure Firewall, Firewall Policy, etc.)
-hub_subscription_id = "00000000-0000-0000-0000-000000000000"
-hub_tenant_id       = "00000000-0000-0000-0000-000000000000"
+hub_subscription_id = ""
+hub_tenant_id       = ""
 
 # vWAN subscription/tenant (prod owns/creates the vWAN in this state).
-virtual_wan_subscription_id = "00000000-0000-0000-0000-000000000000"
-virtual_wan_tenant_id       = "00000000-0000-0000-0000-000000000000"
+virtual_wan_subscription_id = ""
+virtual_wan_tenant_id       = ""
 
 # Mirrors AVM input `enable_telemetry`.
 enable_telemetry = false
@@ -70,6 +70,83 @@ enable_telemetry = false
 tags = {
   environment = "prod"
   workload    = "msft-vhub"
+}
+
+###############################################
+# Network Security Groups (NSGs)
+#
+# Created in this stack so subnets can reference them by key.
+###############################################
+network_security_groups = {
+  prod_sea_dns_inbound = {
+    name               = "msft-vnet-prod-sea-dns-dns-inbound-nsg-southeastasia"
+    resource_group_key = "prod_hub"
+  }
+
+  prod_sea_dns_outbound = {
+    name               = "msft-vnet-prod-sea-dns-dns-outbound-nsg-southeastasia"
+    resource_group_key = "prod_hub"
+  }
+
+  prod_eu_dns_inbound = {
+    name               = "msft-vnet-prod-eu-dns-dns-inbound-nsg-westeurope"
+    resource_group_key = "prod_hub_eu"
+  }
+
+  prod_eu_dns_outbound = {
+    name               = "msft-vnet-prod-eu-dns-dns-outbound-nsg-westeurope"
+    resource_group_key = "prod_hub_eu"
+  }
+}
+
+###############################################
+# RBAC (Azure Role Assignments)
+#
+# AVM basic usage: provide Entra object IDs + explicit scope IDs.
+#
+# This grants `Owner` on the prod resource groups to:
+# - Group: ad58e86d-fdc0-4a37-9eee-83f7bab3a201
+# - User:  dff70d67-3efe-4549-a63f-f8e1e6f3ec9d
+###############################################
+role_assignments_azure_resource_manager = {
+  # Southeast Asia hub RG
+  prod_hub_owner_group = {
+    principal_id             = "ad58e86d-fdc0-4a37-9eee-83f7bab3a201"
+    role_definition_name     = "Owner"
+    scope_resource_group_key = "prod_hub"
+  }
+
+  prod_hub_owner_user = {
+    principal_id             = "dff70d67-3efe-4549-a63f-f8e1e6f3ec9d"
+    role_definition_name     = "Owner"
+    scope_resource_group_key = "prod_hub"
+  }
+
+  # Europe hub RG
+  prod_hub_eu_owner_group = {
+    principal_id             = "ad58e86d-fdc0-4a37-9eee-83f7bab3a201"
+    role_definition_name     = "Owner"
+    scope_resource_group_key = "prod_hub_eu"
+  }
+
+  prod_hub_eu_owner_user = {
+    principal_id             = "dff70d67-3efe-4549-a63f-f8e1e6f3ec9d"
+    role_definition_name     = "Owner"
+    scope_resource_group_key = "prod_hub_eu"
+  }
+
+  # Shared connectivity RG (vWAN RG)
+  prod_connectivity_owner_group = {
+    principal_id             = "ad58e86d-fdc0-4a37-9eee-83f7bab3a201"
+    role_definition_name     = "Owner"
+    scope_resource_group_key = "prod_connectivity"
+  }
+
+  prod_connectivity_owner_user = {
+    principal_id             = "dff70d67-3efe-4549-a63f-f8e1e6f3ec9d"
+    role_definition_name     = "Owner"
+    scope_resource_group_key = "prod_connectivity"
+  }
 }
 
 ###############################################
@@ -241,12 +318,12 @@ firewall_policies = {
       "aks-egress" = {
         priority = 200
 
-        application_rule_collections = {
-          "aks-app" = {
-            priority = 200
+        application_rule_collection = [
+          {
             action   = "Allow"
-
-            rules = [
+            name     = "aks-app"
+            priority = 200
+            rule = [
               {
                 name             = "aks-platform-fqdns"
                 source_addresses = ["*"]
@@ -295,14 +372,14 @@ firewall_policies = {
               },
             ]
           }
-        }
+        ]
 
-        network_rule_collections = {
-          "aks-network" = {
-            priority = 210
+        network_rule_collection = [
+          {
             action   = "Allow"
-
-            rules = [
+            name     = "aks-network"
+            priority = 210
+            rule = [
               {
                 name                  = "aks-controlplane-udp-1194"
                 protocols             = ["UDP"]
@@ -337,10 +414,10 @@ firewall_policies = {
                 source_addresses      = ["*"]
                 destination_addresses = ["*"]
                 destination_ports     = ["123"]
-              },
+              }
             ]
           }
-        }
+        ]
       }
     }
   }
@@ -362,12 +439,12 @@ firewall_policies = {
       "aks-egress" = {
         priority = 200
 
-        application_rule_collections = {
-          "aks-app" = {
-            priority = 200
+        application_rule_collection = [
+          {
             action   = "Allow"
-
-            rules = [
+            name     = "aks-app"
+            priority = 200
+            rule = [
               {
                 name             = "aks-platform-fqdns"
                 source_addresses = ["*"]
@@ -409,17 +486,17 @@ firewall_policies = {
                 source_addresses      = ["*"]
                 protocols             = [{ type = "Http", port = 80 }, { type = "Https", port = 443 }]
                 destination_fqdn_tags = ["AzureKubernetesService"]
-              },
+              }
             ]
           }
-        }
+        ]
 
-        network_rule_collections = {
-          "aks-network" = {
-            priority = 210
+        network_rule_collection = [
+          {
             action   = "Allow"
-
-            rules = [
+            name     = "aks-network"
+            priority = 210
+            rule = [
               {
                 name                  = "aks-controlplane-udp-1194"
                 protocols             = ["UDP"]
@@ -454,10 +531,10 @@ firewall_policies = {
                 source_addresses      = ["*"]
                 destination_addresses = ["*"]
                 destination_ports     = ["123"]
-              },
+              }
             ]
           }
-        }
+        ]
       }
     }
   }
@@ -475,8 +552,8 @@ virtual_hubs = {
   # Southeast Asia (southeastasia)
   ###############################################
   prod = {
-    location          = "southeastasia"
-    default_parent_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/msft-connectivity-prod-sea-rg"
+    location                          = "southeastasia"
+    default_parent_resource_group_key = "prod_hub"
 
     enabled_resources = {
       firewall                              = true
@@ -492,6 +569,10 @@ virtual_hubs = {
     hub = {
       name           = "msft-vhub-prod-sea"
       address_prefix = "10.2.0.0/20"
+
+      # Optional AVM hub settings (explicit here so they are TFVARS-configurable).
+      hub_routing_preference                 = "ExpressRoute"
+      virtual_router_auto_scale_min_capacity = 2
       tags = {
         environment = "prod"
         workload    = "msft-vhub"
@@ -499,11 +580,11 @@ virtual_hubs = {
     }
 
     firewall = {
-      name               = "msft-vhub-prod-sea-firewall"
-      sku_name           = "AZFW_Hub"
-      sku_tier           = "Standard"
-      firewall_policy_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/msft-connectivity-prod-sea-rg/providers/Microsoft.Network/firewallPolicies/msft-vhub-prod-sea-firewall-policy"
-      zones              = []
+      name                = "msft-vhub-prod-sea-firewall"
+      sku_name            = "AZFW_Hub"
+      sku_tier            = "Standard"
+      firewall_policy_key = "prod"
+      zones               = []
     }
 
     virtual_network_gateways = {
@@ -547,7 +628,7 @@ virtual_hubs = {
           name             = "dns-inbound"
           address_prefixes = ["10.2.16.0/28"]
           network_security_group = {
-            id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/msft-connectivity-prod-sea-rg/providers/Microsoft.Network/networkSecurityGroups/msft-vnet-prod-sea-dns-dns-inbound-nsg-southeastasia"
+            key = "prod_sea_dns_inbound"
           }
           delegations = [
             {
@@ -563,7 +644,7 @@ virtual_hubs = {
           name             = "dns-outbound"
           address_prefixes = ["10.2.16.16/28"]
           network_security_group = {
-            id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/msft-connectivity-prod-sea-rg/providers/Microsoft.Network/networkSecurityGroups/msft-vnet-prod-sea-dns-dns-outbound-nsg-southeastasia"
+            key = "prod_sea_dns_outbound"
           }
           delegations = [
             {
@@ -630,8 +711,8 @@ virtual_hubs = {
   # Europe (westeurope)
   ###############################################
   prod_eu = {
-    location          = "westeurope"
-    default_parent_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/msft-connectivity-prod-eu-rg"
+    location                          = "westeurope"
+    default_parent_resource_group_key = "prod_hub_eu"
 
     enabled_resources = {
       firewall                              = true
@@ -647,6 +728,10 @@ virtual_hubs = {
     hub = {
       name           = "msft-vhub-prod-eu"
       address_prefix = "172.16.0.0/20"
+
+      # Optional AVM hub settings (explicit here so they are TFVARS-configurable).
+      hub_routing_preference                 = "ExpressRoute"
+      virtual_router_auto_scale_min_capacity = 2
       tags = {
         environment = "prod"
         workload    = "msft-vhub"
@@ -654,11 +739,11 @@ virtual_hubs = {
     }
 
     firewall = {
-      name               = "msft-vhub-prod-eu-firewall"
-      sku_name           = "AZFW_Hub"
-      sku_tier           = "Standard"
-      firewall_policy_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/msft-connectivity-prod-eu-rg/providers/Microsoft.Network/firewallPolicies/msft-vhub-prod-eu-firewall-policy"
-      zones              = []
+      name                = "msft-vhub-prod-eu-firewall"
+      sku_name            = "AZFW_Hub"
+      sku_tier            = "Standard"
+      firewall_policy_key = "prod_eu"
+      zones               = []
     }
 
     virtual_network_gateways = {
@@ -682,7 +767,7 @@ virtual_hubs = {
           name             = "dns-inbound"
           address_prefixes = ["172.16.16.0/28"]
           network_security_group = {
-            id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/msft-connectivity-prod-eu-rg/providers/Microsoft.Network/networkSecurityGroups/msft-vnet-prod-eu-dns-dns-inbound-nsg-westeurope"
+            key = "prod_eu_dns_inbound"
           }
           delegations = [
             {
@@ -698,7 +783,7 @@ virtual_hubs = {
           name             = "dns-outbound"
           address_prefixes = ["172.16.16.16/28"]
           network_security_group = {
-            id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/msft-connectivity-prod-eu-rg/providers/Microsoft.Network/networkSecurityGroups/msft-vnet-prod-eu-dns-dns-outbound-nsg-westeurope"
+            key = "prod_eu_dns_outbound"
           }
           delegations = [
             {

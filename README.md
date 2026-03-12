@@ -126,7 +126,7 @@ Workflow: `.github/workflows/terraform.yml`
 - `pull_request` to `main` runs **plan** for `prod`.
 - `workflow_dispatch` supports `plan` or `apply` for `prod`.
 
-The workflow uses `azure/login@v2` OIDC and expects repo variables (or defaults):
+The workflow uses `azure/login@v2` OIDC and expects repo variables:
 
 - `ARM_CLIENT_ID`
 - `ARM_TENANT_ID`
@@ -144,12 +144,12 @@ Set these in your shell (examples shown):
 
 ```bash
 # Azure
-AZ_TENANT_ID="00000000-0000-0000-0000-000000000000"
-AZ_SUBSCRIPTION_ID="00000000-0000-0000-0000-000000000000"  # login context
+AZ_TENANT_ID="<tenant-id>"
+AZ_SUBSCRIPTION_ID="<subscription-id>"  # login context
 
 # GitHub
 GH_ORG="cx-demo-org"
-GH_REPO="msft-eslz-connectivity"
+GH_REPO="demo-eslz-connectivity-shared"
 GH_BRANCH="main"
 
 # Naming
