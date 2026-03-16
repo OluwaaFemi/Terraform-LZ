@@ -105,45 +105,45 @@ network_security_groups = {
 # AVM basic usage: provide Entra object IDs + explicit scope IDs.
 #
 # This grants `Owner` on the prod resource groups to:
-# - Group: ad58e86d-fdc0-4a37-9eee-83f7bab3a201
-# - User:  dff70d67-3efe-4549-a63f-f8e1e6f3ec9d
+# - Group: 00000000-0000-0000-0000-000000000000 (placeholder)
+# - User:  00000000-0000-0000-0000-000000000000 (placeholder)
 ###############################################
 role_assignments_azure_resource_manager = {
   # Southeast Asia hub RG
   prod_hub_owner_group = {
-    principal_id             = "ad58e86d-fdc0-4a37-9eee-83f7bab3a201"
+    principal_id             = "00000000-0000-0000-0000-000000000000"
     role_definition_name     = "Owner"
     scope_resource_group_key = "prod_hub"
   }
 
   prod_hub_owner_user = {
-    principal_id             = "dff70d67-3efe-4549-a63f-f8e1e6f3ec9d"
+    principal_id             = "00000000-0000-0000-0000-000000000000"
     role_definition_name     = "Owner"
     scope_resource_group_key = "prod_hub"
   }
 
   # Europe hub RG
   prod_hub_eu_owner_group = {
-    principal_id             = "ad58e86d-fdc0-4a37-9eee-83f7bab3a201"
+    principal_id             = "00000000-0000-0000-0000-000000000000"
     role_definition_name     = "Owner"
     scope_resource_group_key = "prod_hub_eu"
   }
 
   prod_hub_eu_owner_user = {
-    principal_id             = "dff70d67-3efe-4549-a63f-f8e1e6f3ec9d"
+    principal_id             = "00000000-0000-0000-0000-000000000000"
     role_definition_name     = "Owner"
     scope_resource_group_key = "prod_hub_eu"
   }
 
   # Shared connectivity RG (vWAN RG)
   prod_connectivity_owner_group = {
-    principal_id             = "ad58e86d-fdc0-4a37-9eee-83f7bab3a201"
+    principal_id             = "00000000-0000-0000-0000-000000000000"
     role_definition_name     = "Owner"
     scope_resource_group_key = "prod_connectivity"
   }
 
   prod_connectivity_owner_user = {
-    principal_id             = "dff70d67-3efe-4549-a63f-f8e1e6f3ec9d"
+    principal_id             = "00000000-0000-0000-0000-000000000000"
     role_definition_name     = "Owner"
     scope_resource_group_key = "prod_connectivity"
   }
