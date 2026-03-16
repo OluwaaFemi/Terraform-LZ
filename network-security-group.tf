@@ -12,7 +12,13 @@ module "network_security_groups" {
 
   tags = merge(try(module.resource_groups[each.value.resource_group_key].resource.tags, data.azurerm_resource_group.rg[each.value.resource_group_key].tags, {}), try(each.value.tags, {}))
 
-  enable_telemetry = var.enable_telemetry
+  security_rules      = try(each.value.security_rules, {})
+  diagnostic_settings = try(each.value.diagnostic_settings, {})
+  role_assignments    = try(each.value.role_assignments, {})
+  lock                = try(each.value.lock, null)
+  timeouts            = try(each.value.timeouts, null)
+
+  enable_telemetry = coalesce(try(each.value.enable_telemetry, null), var.enable_telemetry)
 }
 
 data "azurerm_network_security_group" "existing" {
