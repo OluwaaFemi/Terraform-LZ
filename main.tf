@@ -25,8 +25,6 @@ module "alz_connectivity" {
   source  = "Azure/avm-ptn-alz-connectivity-virtual-wan/azurerm"
   version = "0.13.5"
 
-  count = 1
-
   providers = {
     azurerm = azurerm.wan
     azapi   = azapi.wan
