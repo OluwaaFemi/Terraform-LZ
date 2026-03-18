@@ -1,4 +1,4 @@
-resource_group_name  = "msft-tfstate-prod-rg"
-storage_account_name = "msfttfstateprod001"
+resource_group_name  = "demo-tfstate-prod-rg"
+storage_account_name = "demotfstateprod001"
 container_name       = "tfstate"
-key                  = "msft-lz-connectivity/environments/prod/terraform-v2.tfstate"
+key                  = "demo-lz-connectivity/environments/prod/terraform.tfstate"

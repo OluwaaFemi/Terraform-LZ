@@ -6,7 +6,7 @@
 > [!NOTE]
 > AVM modules may introduce changes over time (including breaking changes). For AVM bugs or feature requests, please raise issues with the relevant AVM module repository.
 
-# msft-eslz-connectivity
+# demo-eslz-connectivity-shared
 
 Terraform configuration to deploy a Virtual WAN based connectivity foundation using AVM modules.
 
@@ -38,7 +38,7 @@ This repo can deploy:
 
 The architecture diagram is shown below:
 
-![msft-eslz-connectivity architecture](./documents/images/eslz-connectivity-v4.png)
+![demo-eslz-connectivity-shared architecture](./documents/images/eslz-connectivity-v4.png)
 
 ## Prerequisites
 
@@ -58,7 +58,7 @@ If you see `403` errors like `Microsoft.Resources/subscriptions/providers/read`,
 
 ### GitHub Actions (OIDC) permissions model
 
-This repo’s CI is designed to authenticate to Azure **without secrets** using GitHub Actions OIDC (`azure/login@v2`).
+This repo’s CI is designed to authenticate to Azure **without secrets** using GitHub Actions OIDC (Azure CLI login with a federated token).
 
 There are two distinct “permission planes” you must satisfy:
 
@@ -123,7 +123,7 @@ Workflow: `.github/workflows/terraform.yml`
 - `pull_request` to `main` runs **plan** for `prod`.
 - `workflow_dispatch` supports `plan` or `apply` for `prod`.
 
-The workflow uses `azure/login@v2` OIDC and expects repo variables:
+The workflow uses OIDC (Azure CLI) and expects repo variables:
 
 - `ARM_CLIENT_ID`
 - `ARM_TENANT_ID`

@@ -8,6 +8,5 @@ module "connectivity_rbac" {
 
   role_assignments_azure_resource_manager = local.role_assignments_azure_resource_manager_effective
 
-  # Ensure role assignments wait for any RGs created in this stack.
   depends_on = [module.resource_groups]
 }

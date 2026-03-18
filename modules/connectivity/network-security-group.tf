@@ -1,9 +1,7 @@
 module "network_security_groups" {
   for_each = var.network_security_groups
 
-  source = "Azure/avm-res-network-networksecuritygroup/azurerm"
-  # Pin to an explicit version for reproducibility.
-  # Update intentionally as part of dependency management.
+  source  = "Azure/avm-res-network-networksecuritygroup/azurerm"
   version = "0.5.1"
 
   name                = each.value.name

@@ -54,18 +54,58 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Azure login (OIDC)
-        uses: azure/login@v2
-        with:
-          client-id: ${{ env.ARM_CLIENT_ID }}
-          tenant-id: ${{ env.ARM_TENANT_ID }}
-          subscription-id: ${{ env.ARM_SUBSCRIPTION_ID }}
-          audience: ${{ env.ARM_OIDC_AUDIENCE }}
+      - name: Azure login (OIDC via az)
+        shell: bash
+        run: |
+          set -euo pipefail
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_wrapper: false
+          if ! command -v az >/dev/null 2>&1; then
+            echo "Azure CLI (az) is required on the runner." >&2
+            exit 1
+          fi
+
+          if command -v python3 >/dev/null 2>&1; then
+            py=python3
+          elif command -v python >/dev/null 2>&1; then
+            py=python
+          else
+            echo "Python is required on the runner (python3 preferred)." >&2
+            exit 1
+          fi
+
+          oidc_json="$(curl -sS -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${ARM_OIDC_AUDIENCE}")"
+          oidc_token="$(${py} -c 'import json,sys; print(json.load(sys.stdin)["value"])' <<<"${oidc_json}")"
+
+          az login --service-principal \
+            --username "${ARM_CLIENT_ID}" \
+            --tenant "${ARM_TENANT_ID}" \
+            --federated-token "${oidc_token}" \
+            --allow-no-subscriptions
+
+          az account set --subscription "${ARM_SUBSCRIPTION_ID}"
+
+      - name: Terraform (ensure installed)
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if command -v terraform >/dev/null 2>&1; then
+            terraform version
+            exit 0
+          fi
+
+          TF_VERSION="1.10.3"
+          echo "Terraform not found; installing terraform ${TF_VERSION}"
+
+          if ! command -v unzip >/dev/null 2>&1; then
+            sudo apt-get update -y
+            sudo apt-get install -y unzip
+          fi
+
+          curl -fsSL "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip" -o /tmp/terraform.zip
+          sudo unzip -o /tmp/terraform.zip -d /usr/local/bin
+          terraform version
 
       - name: Prepare Terraform plugin cache
         shell: bash
@@ -170,18 +210,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Azure login (OIDC)
-        uses: azure/login@v2
-        with:
-          client-id: ${{ env.ARM_CLIENT_ID }}
-          tenant-id: ${{ env.ARM_TENANT_ID }}
-          subscription-id: ${{ env.ARM_SUBSCRIPTION_ID }}
-          audience: ${{ env.ARM_OIDC_AUDIENCE }}
+      - name: Azure login (OIDC via az)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v az >/dev/null 2>&1; then
+            echo "Azure CLI (az) is required on the runner." >&2
+            exit 1
+          fi
+          if command -v python3 >/dev/null 2>&1; then py=python3; elif command -v python >/dev/null 2>&1; then py=python; else echo "Python is required on the runner (python3 preferred)." >&2; exit 1; fi
+          oidc_json="$(curl -sS -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${ARM_OIDC_AUDIENCE}")"
+          oidc_token="$(${py} -c 'import json,sys; print(json.load(sys.stdin)["value"])' <<<"${oidc_json}")"
+          az login --service-principal --username "${ARM_CLIENT_ID}" --tenant "${ARM_TENANT_ID}" --federated-token "${oidc_token}" --allow-no-subscriptions
+          az account set --subscription "${ARM_SUBSCRIPTION_ID}"
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_wrapper: false
+      - name: Terraform (ensure installed)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if command -v terraform >/dev/null 2>&1; then terraform version; exit 0; fi
+          TF_VERSION="1.10.3"
+          echo "Terraform not found; installing terraform ${TF_VERSION}"
+          if ! command -v unzip >/dev/null 2>&1; then sudo apt-get update -y && sudo apt-get install -y unzip; fi
+          curl -fsSL "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip" -o /tmp/terraform.zip
+          sudo unzip -o /tmp/terraform.zip -d /usr/local/bin
+          terraform version
 
       - name: Prepare Terraform plugin cache
         shell: bash
@@ -235,18 +288,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Azure login (OIDC)
-        uses: azure/login@v2
-        with:
-          client-id: ${{ env.ARM_CLIENT_ID }}
-          tenant-id: ${{ env.ARM_TENANT_ID }}
-          subscription-id: ${{ env.ARM_SUBSCRIPTION_ID }}
-          audience: ${{ env.ARM_OIDC_AUDIENCE }}
+      - name: Azure login (OIDC via az)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v az >/dev/null 2>&1; then
+            echo "Azure CLI (az) is required on the runner." >&2
+            exit 1
+          fi
+          if command -v python3 >/dev/null 2>&1; then py=python3; elif command -v python >/dev/null 2>&1; then py=python; else echo "Python is required on the runner (python3 preferred)." >&2; exit 1; fi
+          oidc_json="$(curl -sS -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${ARM_OIDC_AUDIENCE}")"
+          oidc_token="$(${py} -c 'import json,sys; print(json.load(sys.stdin)["value"])' <<<"${oidc_json}")"
+          az login --service-principal --username "${ARM_CLIENT_ID}" --tenant "${ARM_TENANT_ID}" --federated-token "${oidc_token}" --allow-no-subscriptions
+          az account set --subscription "${ARM_SUBSCRIPTION_ID}"
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_wrapper: false
+      - name: Terraform (ensure installed)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if command -v terraform >/dev/null 2>&1; then terraform version; exit 0; fi
+          TF_VERSION="1.10.3"
+          echo "Terraform not found; installing terraform ${TF_VERSION}"
+          if ! command -v unzip >/dev/null 2>&1; then sudo apt-get update -y && sudo apt-get install -y unzip; fi
+          curl -fsSL "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip" -o /tmp/terraform.zip
+          sudo unzip -o /tmp/terraform.zip -d /usr/local/bin
+          terraform version
 
       - name: Prepare Terraform plugin cache
         shell: bash

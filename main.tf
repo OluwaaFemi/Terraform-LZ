@@ -1,34 +1,15 @@
-## AVM schema pass-through
-# This repo intentionally stays close to the upstream AVM pattern module by
-# passing `virtual_wan_settings` and `virtual_hubs` through directly.
-
-module "resource_groups" {
-  for_each = var.resource_groups
-
-  source  = "Azure/avm-res-resources-resourcegroup/azurerm"
-  version = "0.2.2"
-
-  name     = each.value.name
-  location = each.value.location
-  tags     = each.value.tags
-
-  enable_telemetry = false
-}
-
-data "azurerm_resource_group" "rg" {
-  for_each = var.existing_resource_groups
-
-  name = each.value.name
-}
-
-module "alz_connectivity" {
-  source  = "Azure/avm-ptn-alz-connectivity-virtual-wan/azurerm"
-  version = "0.13.5"
+module "connectivity" {
+  source = "./modules/connectivity"
 
   providers = {
-    azurerm = azurerm.wan
-    azapi   = azapi.wan
+    azurerm     = azurerm
+    azurerm.wan = azurerm.wan
+    azapi       = azapi
+    azapi.wan   = azapi.wan
   }
+
+  resource_groups          = var.resource_groups
+  existing_resource_groups = var.existing_resource_groups
 
   enable_telemetry = var.enable_telemetry
   tags             = var.tags
@@ -41,6 +22,27 @@ module "alz_connectivity" {
   private_link_private_dns_zone_virtual_network_link_moved_block_template_module_prefix = var.private_link_private_dns_zone_virtual_network_link_moved_block_template_module_prefix
 
   virtual_wan_settings = var.virtual_wan_settings
-  virtual_hubs         = local.virtual_hubs_effective
+  virtual_hubs         = var.virtual_hubs
+
+  firewall_policies          = var.firewall_policies
+  existing_firewall_policies = var.existing_firewall_policies
+
+  network_security_groups          = var.network_security_groups
+  existing_network_security_groups = var.existing_network_security_groups
+
+  expressroute_circuits = var.expressroute_circuits
+
+  firewall_log_analytics_workspaces             = var.firewall_log_analytics_workspaces
+  expressroute_gateway_log_analytics_workspaces = var.expressroute_gateway_log_analytics_workspaces
+
+  role_assignments_azure_resource_manager = var.role_assignments_azure_resource_manager
+
+  firewall_diagnostic_log_analytics_destination_type = var.firewall_diagnostic_log_analytics_destination_type
+  firewall_diagnostic_enabled_log_category_group     = var.firewall_diagnostic_enabled_log_category_group
+  firewall_diagnostic_enabled_metric_category        = var.firewall_diagnostic_enabled_metric_category
+  firewall_diagnostic_enabled_metric_enabled         = var.firewall_diagnostic_enabled_metric_enabled
+
+  expressroute_gateway_diagnostic_enabled_metric_category = var.expressroute_gateway_diagnostic_enabled_metric_category
+  expressroute_gateway_diagnostic_enabled_metric_enabled  = var.expressroute_gateway_diagnostic_enabled_metric_enabled
 }
 
