@@ -16,20 +16,20 @@ resource_groups = {
   # Southeast Asia (southeastasia)
   ###############################################
   prod_connectivity = {
-    name     = "msft-prod-connectivity-rg"
+    name     = "demo-prod-connectivity-rg"
     location = "southeastasia"
     tags = {
       environment = "prod"
-      workload    = "msft-vwan"
+      workload    = "demo-vwan"
     }
   }
 
   prod_hub = {
-    name     = "msft-connectivity-prod-sea-rg"
+    name     = "demo-connectivity-prod-sea-rg"
     location = "southeastasia"
     tags = {
       environment = "prod"
-      workload    = "msft-vhub"
+      workload    = "demo-vhub"
     }
   }
 
@@ -37,11 +37,11 @@ resource_groups = {
   # Europe (westeurope)
   ###############################################
   prod_hub_eu = {
-    name     = "msft-connectivity-prod-eu-rg"
+    name     = "demo-connectivity-prod-eu-rg"
     location = "westeurope"
     tags = {
       environment = "prod"
-      workload    = "msft-vhub"
+      workload    = "demo-vhub"
     }
   }
 }
@@ -54,12 +54,12 @@ resource_groups = {
 # - vWAN subscription: vWAN create/lookup (prod owns the shared vWAN).
 ###############################################
 # Target subscription/tenant for hub resources (vHub, Azure Firewall, Firewall Policy, etc.)
-hub_subscription_id = ""
-hub_tenant_id       = ""
+hub_subscription_id = null
+hub_tenant_id       = null
 
 # vWAN subscription/tenant (prod owns/creates the vWAN in this state).
-virtual_wan_subscription_id = ""
-virtual_wan_tenant_id       = ""
+virtual_wan_subscription_id = null
+virtual_wan_tenant_id       = null
 
 # Mirrors AVM input `enable_telemetry`.
 enable_telemetry = false
@@ -69,7 +69,7 @@ enable_telemetry = false
 # object-level `tags` override is provided.
 tags = {
   environment = "prod"
-  workload    = "msft-vhub"
+  workload    = "demo-vhub"
 }
 
 ###############################################
@@ -79,22 +79,22 @@ tags = {
 ###############################################
 network_security_groups = {
   prod_sea_dns_inbound = {
-    name               = "msft-vnet-prod-sea-dns-dns-inbound-nsg-southeastasia"
+    name               = "demo-vnet-prod-sea-dns-dns-inbound-nsg-southeastasia"
     resource_group_key = "prod_hub"
   }
 
   prod_sea_dns_outbound = {
-    name               = "msft-vnet-prod-sea-dns-dns-outbound-nsg-southeastasia"
+    name               = "demo-vnet-prod-sea-dns-dns-outbound-nsg-southeastasia"
     resource_group_key = "prod_hub"
   }
 
   prod_eu_dns_inbound = {
-    name               = "msft-vnet-prod-eu-dns-dns-inbound-nsg-westeurope"
+    name               = "demo-vnet-prod-eu-dns-dns-inbound-nsg-westeurope"
     resource_group_key = "prod_hub_eu"
   }
 
   prod_eu_dns_outbound = {
-    name               = "msft-vnet-prod-eu-dns-dns-outbound-nsg-westeurope"
+    name               = "demo-vnet-prod-eu-dns-dns-outbound-nsg-westeurope"
     resource_group_key = "prod_hub_eu"
   }
 }
@@ -162,21 +162,21 @@ role_assignments_azure_resource_manager = {
 firewall_log_analytics_workspaces = {
   # Southeast Asia (southeastasia) - vHub key: prod
   prod = {
-    name               = "msft-prod-sea-firewall-law"
+    name               = "demo-prod-sea-firewall-law"
     resource_group_key = "prod_hub"
     tags = {
       environment = "prod"
-      workload    = "msft-firewall-law"
+      workload    = "demo-firewall-law"
     }
   }
 
   # Europe (westeurope) - vHub key: prod_eu
   prod_eu = {
-    name               = "msft-prod-eu-firewall-law"
+    name               = "demo-prod-eu-firewall-law"
     resource_group_key = "prod_hub_eu"
     tags = {
       environment = "prod"
-      workload    = "msft-firewall-law"
+      workload    = "demo-firewall-law"
     }
   }
 }
@@ -198,21 +198,21 @@ firewall_log_analytics_workspaces = {
 expressroute_gateway_log_analytics_workspaces = {
   # Southeast Asia (southeastasia) - vHub key: prod
   prod = {
-    name               = "msft-prod-sea-ergw-law"
+    name               = "demo-prod-sea-ergw-law"
     resource_group_key = "prod_hub"
     tags = {
       environment = "prod"
-      workload    = "msft-ergw-law"
+      workload    = "demo-ergw-law"
     }
   }
 
   # Europe (westeurope) - vHub key: prod_eu
   prod_eu = {
-    name               = "msft-prod-eu-ergw-law"
+    name               = "demo-prod-eu-ergw-law"
     resource_group_key = "prod_hub_eu"
     tags = {
       environment = "prod"
-      workload    = "msft-ergw-law"
+      workload    = "demo-ergw-law"
     }
   }
 }
@@ -234,8 +234,8 @@ virtual_wan_settings = {
   }
 
   virtual_wan = {
-    name                = "msft-prod-sea-vwan"
-    resource_group_name = "msft-prod-connectivity-rg"
+    name                = "demo-prod-sea-vwan"
+    resource_group_name = "demo-prod-connectivity-rg"
     location            = "southeastasia"
     type                = "Standard"
 
@@ -244,7 +244,7 @@ virtual_wan_settings = {
 
     tags = {
       environment = "prod"
-      workload    = "msft-vwan"
+      workload    = "demo-vwan"
     }
   }
 }
@@ -269,8 +269,8 @@ virtual_wan_settings = {
 # If a circuit already exists and is in state, keep it defined here to avoid destroy.
 expressroute_circuits = {
   prod_primary = {
-    # ExpressRoute circuit: msft-prod-sea-er-circuit-01
-    name               = "msft-prod-sea-er-circuit-01"
+    # ExpressRoute circuit: demo-prod-sea-er-circuit-01
+    name               = "demo-prod-sea-er-circuit-01"
     resource_group_key = "prod_hub"
     location           = "southeastasia"
 
@@ -289,7 +289,7 @@ expressroute_circuits = {
 
     tags = {
       environment = "prod"
-      workload    = "msft-expressroute"
+      workload    = "demo-expressroute"
     }
   }
 }
@@ -305,12 +305,12 @@ firewall_policies = {
   # Southeast Asia (southeastasia)
   ###############################################
   prod = {
-    name               = "msft-vhub-prod-sea-firewall-policy"
+    name               = "demo-vhub-prod-sea-firewall-policy"
     resource_group_key = "prod_hub"
     location           = "southeastasia"
     tags = {
       environment = "prod"
-      workload    = "msft-fwpolicy"
+      workload    = "demo-fwpolicy"
     }
 
     # Rules are explicitly managed via tfvars so end users can customize them.
@@ -426,12 +426,12 @@ firewall_policies = {
   # Europe (westeurope)
   ###############################################
   prod_eu = {
-    name               = "msft-vhub-prod-eu-firewall-policy"
+    name               = "demo-vhub-prod-eu-firewall-policy"
     resource_group_key = "prod_hub_eu"
     location           = "westeurope"
     tags = {
       environment = "prod"
-      workload    = "msft-fwpolicy"
+      workload    = "demo-fwpolicy"
     }
 
     # Start with the same baseline allow-list as SEA, then tailor as needed.
@@ -567,7 +567,7 @@ virtual_hubs = {
     }
 
     hub = {
-      name           = "msft-vhub-prod-sea"
+      name           = "demo-vhub-prod-sea"
       address_prefix = "10.2.0.0/20"
 
       # Optional AVM hub settings (explicit here so they are TFVARS-configurable).
@@ -575,12 +575,12 @@ virtual_hubs = {
       virtual_router_auto_scale_min_capacity = 2
       tags = {
         environment = "prod"
-        workload    = "msft-vhub"
+        workload    = "demo-vhub"
       }
     }
 
     firewall = {
-      name                = "msft-vhub-prod-sea-firewall"
+      name                = "demo-vhub-prod-sea-firewall"
       sku_name            = "AZFW_Hub"
       sku_tier            = "Standard"
       firewall_policy_key = "prod"
@@ -589,19 +589,19 @@ virtual_hubs = {
 
     virtual_network_gateways = {
       express_route = {
-        name        = "msft-vhub-prod-sea-ergw"
+        name        = "demo-vhub-prod-sea-ergw"
         scale_units = 1
       }
 
       vpn = {
-        name       = "msft-vhub-prod-sea-s2s-gw"
+        name       = "demo-vhub-prod-sea-s2s-gw"
         scale_unit = 1
       }
     }
 
     vpn_sites = {
       prod = {
-        name          = "msft-prod-vpn-site"
+        name          = "demo-prod-vpn-site"
         address_cidrs = ["10.100.0.0/24"]
         links = [
           {
@@ -615,11 +615,11 @@ virtual_hubs = {
     vpn_site_connections = {}
 
     sidecar_virtual_network = {
-      name          = "msft-vnet-prod-sea-dns"
+      name          = "demo-vnet-prod-sea-dns"
       address_space = ["10.2.16.0/24"]
 
       virtual_network_connection_settings = {
-        name                      = "msft-vnet-prod-sea-dns-to-vhub"
+        name                      = "demo-vnet-prod-sea-dns-to-vhub"
         internet_security_enabled = false
       }
 
@@ -659,7 +659,7 @@ virtual_hubs = {
     }
 
     private_dns_resolver = {
-      name                             = "msft-pdr-prod-sea"
+      name                             = "demo-pdr-prod-sea"
       default_inbound_endpoint_enabled = false
 
       inbound_endpoints = {
@@ -698,7 +698,7 @@ virtual_hubs = {
     private_dns_zones = {
       tags = {
         environment = "prod"
-        workload    = "msft-vwan"
+        workload    = "demo-vwan"
       }
       auto_registration_zone_enabled = false
       private_link_private_dns_zones_regex_filter = {
@@ -726,7 +726,7 @@ virtual_hubs = {
     }
 
     hub = {
-      name           = "msft-vhub-prod-eu"
+      name           = "demo-vhub-prod-eu"
       address_prefix = "172.16.0.0/20"
 
       # Optional AVM hub settings (explicit here so they are TFVARS-configurable).
@@ -734,12 +734,12 @@ virtual_hubs = {
       virtual_router_auto_scale_min_capacity = 2
       tags = {
         environment = "prod"
-        workload    = "msft-vhub"
+        workload    = "demo-vhub"
       }
     }
 
     firewall = {
-      name                = "msft-vhub-prod-eu-firewall"
+      name                = "demo-vhub-prod-eu-firewall"
       sku_name            = "AZFW_Hub"
       sku_tier            = "Standard"
       firewall_policy_key = "prod_eu"
@@ -748,17 +748,17 @@ virtual_hubs = {
 
     virtual_network_gateways = {
       express_route = {
-        name        = "msft-vhub-prod-eu-ergw"
+        name        = "demo-vhub-prod-eu-ergw"
         scale_units = 1
       }
     }
 
     sidecar_virtual_network = {
-      name          = "msft-vnet-prod-eu-dns"
+      name          = "demo-vnet-prod-eu-dns"
       address_space = ["172.16.16.0/24"]
 
       virtual_network_connection_settings = {
-        name                      = "msft-vnet-prod-eu-dns-to-vhub"
+        name                      = "demo-vnet-prod-eu-dns-to-vhub"
         internet_security_enabled = false
       }
 
@@ -798,7 +798,7 @@ virtual_hubs = {
     }
 
     private_dns_resolver = {
-      name                             = "msft-pdr-prod-eu"
+      name                             = "demo-pdr-prod-eu"
       default_inbound_endpoint_enabled = false
 
       inbound_endpoints = {
@@ -820,7 +820,7 @@ virtual_hubs = {
     private_dns_zones = {
       tags = {
         environment = "prod"
-        workload    = "msft-vwan"
+        workload    = "demo-vwan"
       }
       auto_registration_zone_enabled = false
       private_link_private_dns_zones_regex_filter = {
