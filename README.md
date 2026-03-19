@@ -23,6 +23,7 @@ This repo can deploy:
 	- Firewall policies + rule collection groups (tfvars-driven)
 	- Secured hubs (Azure Firewall `AZFW_Hub` attached to a vHub)
 	- Monitoring for Azure Firewall (dedicated Log Analytics Workspace per hub + diagnostic settings)
+	- Private DNS Zones (Private Link zones) + optional virtual network links (per hub)
 	- Private DNS Resolver (Azure DNS Private Resolver) hosted in a per-hub sidecar VNet
 	- ExpressRoute gateways (in each vHub)
 	- Monitoring for ExpressRoute gateways (dedicated Log Analytics Workspace per hub + diagnostic settings/metrics)
@@ -93,9 +94,48 @@ Key inputs:
 
 - `resource_groups` / `existing_resource_groups`
 - `virtual_wan` (managed)
-- `virtual_hubs` map (each hub can include optional `firewall`, optional `expressroute_gateway`, optional `private_dns_resolver`, and optional `site_to_site_vpn`)
+- `virtual_hubs` map (each hub can include optional `firewall`, optional `expressroute_gateway`, optional `private_dns_zones`, optional `private_dns_resolver`, and optional `site_to_site_vpn`)
 - `firewall_policies` map
 - `expressroute_circuits` map (optional)
+
+### Network Security Groups (NSGs) and rules
+
+This repo can create NSGs via `network_security_groups` and optionally create **NSG rules** by setting `network_security_groups[*].security_rules`.
+
+- `network_security_groups` entries are created with the AVM NSG resource module.
+- `security_rules` is passed through directly to the AVM module input of the same name.
+
+Minimal example (tfvars):
+
+```hcl
+network_security_groups = {
+	example_nsg = {
+		name               = "demo-example-nsg"
+		resource_group_key = "prod_hub"
+
+		# AVM NSG module input: security_rules
+		# Schema reference: https://registry.terraform.io/modules/Azure/avm-res-network-networksecuritygroup/azurerm
+		security_rules = {
+			allow_dns_inbound_udp = {
+				name                       = "AllowDnsInboundUdp"
+				priority                   = 200
+				direction                  = "Inbound"
+				access                     = "Allow"
+				protocol                   = "Udp"
+				source_address_prefix      = "VirtualNetwork"
+				source_port_range          = "*"
+				destination_address_prefix = "*"
+				destination_port_range     = "53"
+				description                = "Example rule: allow UDP/53 from VirtualNetwork"
+			}
+		}
+	}
+}
+```
+
+Notes:
+- For *address prefixes* and *port ranges*, the AVM module supports either singular (`*_prefix` / `*_range`) or plural (`*_prefixes` / `*_ranges`) forms.
+- Azure service tags like `VirtualNetwork` are supported via the singular `source_address_prefix`/`destination_address_prefix` fields (the plural list forms do not support tags).
 
 ### Multi-subscription support
 

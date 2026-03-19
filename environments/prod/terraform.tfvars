@@ -81,6 +81,22 @@ network_security_groups = {
   prod_sea_dns_inbound = {
     name               = "demo-vnet-prod-sea-dns-dns-inbound-nsg-southeastasia"
     resource_group_key = "prod_hub"
+
+    # Sample NSG rule (AVM `security_rules`) - allows UDP/53 from VirtualNetwork.
+    security_rules = {
+      allow_dns_udp_53_from_vnet = {
+        name                       = "AllowDnsUdp53FromVnet"
+        priority                   = 200
+        direction                  = "Inbound"
+        access                     = "Allow"
+        protocol                   = "Udp"
+        source_address_prefix      = "VirtualNetwork"
+        source_port_range          = "*"
+        destination_address_prefix = "*"
+        destination_port_range     = "53"
+        description                = "Sample: allow UDP/53 from VirtualNetwork"
+      }
+    }
   }
 
   prod_sea_dns_outbound = {
