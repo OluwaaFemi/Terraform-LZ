@@ -13,11 +13,11 @@
 ###############################################
 resource_groups = {
   ###############################################
-  # Southeast Asia (southeastasia)
+  # West US (West US)
   ###############################################
   prod_connectivity = {
     name     = "demo-prod-connectivity-rg"
-    location = "southeastasia"
+    location = "westus"
     tags = {
       environment = "prod"
       workload    = "demo-vwan"
@@ -26,7 +26,7 @@ resource_groups = {
 
   prod_hub = {
     name     = "demo-connectivity-prod-sea-rg"
-    location = "southeastasia"
+    location = "westus"
     tags = {
       environment = "prod"
       workload    = "demo-vhub"
@@ -34,11 +34,11 @@ resource_groups = {
   }
 
   ###############################################
-  # Europe (westeurope)
+  # UK South (uksouth)
   ###############################################
   prod_hub_eu = {
     name     = "demo-connectivity-prod-eu-rg"
-    location = "westeurope"
+    location = "uksouth"
     tags = {
       environment = "prod"
       workload    = "demo-vhub"
@@ -54,12 +54,14 @@ resource_groups = {
 # - vWAN subscription: vWAN create/lookup (prod owns the shared vWAN).
 ###############################################
 # Target subscription/tenant for hub resources (vHub, Azure Firewall, Firewall Policy, etc.)
-hub_subscription_id = null
-hub_tenant_id       = null
+hub_subscription_id = "1be2ef32-6355-43a8-8811-1786c2427876"
+hub_tenant_id       = "be336bc6-24d8-4edc-8248-dc8ca1a7eb73"
+
 
 # vWAN subscription/tenant (prod owns/creates the vWAN in this state).
-virtual_wan_subscription_id = null
-virtual_wan_tenant_id       = null
+virtual_wan_subscription_id = "1be2ef32-6355-43a8-8811-1786c2427876"
+virtual_wan_tenant_id       = "be336bc6-24d8-4edc-8248-dc8ca1a7eb73"
+
 
 # Mirrors AVM input `enable_telemetry`.
 enable_telemetry = false
@@ -79,7 +81,7 @@ tags = {
 ###############################################
 network_security_groups = {
   prod_sea_dns_inbound = {
-    name               = "demo-vnet-prod-sea-dns-dns-inbound-nsg-southeastasia"
+    name               = "demo-vnet-prod-sea-dns-dns-inbound-nsg-westus"
     resource_group_key = "prod_hub"
 
     # Sample NSG rule (AVM `security_rules`) - allows UDP/53 from VirtualNetwork.
@@ -100,17 +102,17 @@ network_security_groups = {
   }
 
   prod_sea_dns_outbound = {
-    name               = "demo-vnet-prod-sea-dns-dns-outbound-nsg-southeastasia"
+    name               = "demo-vnet-prod-sea-dns-dns-outbound-nsg-westus"
     resource_group_key = "prod_hub"
   }
 
   prod_eu_dns_inbound = {
-    name               = "demo-vnet-prod-eu-dns-dns-inbound-nsg-westeurope"
+    name               = "demo-vnet-prod-eu-dns-dns-inbound-nsg-uksouth"
     resource_group_key = "prod_hub_eu"
   }
 
   prod_eu_dns_outbound = {
-    name               = "demo-vnet-prod-eu-dns-dns-outbound-nsg-westeurope"
+    name               = "demo-vnet-prod-eu-dns-dns-outbound-nsg-uksouth"
     resource_group_key = "prod_hub_eu"
   }
 }
@@ -125,41 +127,41 @@ network_security_groups = {
 # - User:  00000000-0000-0000-0000-000000000000 (placeholder)
 ###############################################
 role_assignments_azure_resource_manager = {
-  # Southeast Asia hub RG
+  # West US hub RG
   prod_hub_owner_group = {
-    principal_id             = "00000000-0000-0000-0000-000000000000"
+    principal_id             = "0ec4e1d1-4084-4c09-bd9c-deb5307e5f3f"
     role_definition_name     = "Owner"
     scope_resource_group_key = "prod_hub"
   }
 
   prod_hub_owner_user = {
-    principal_id             = "00000000-0000-0000-0000-000000000000"
+    principal_id             = "0ec4e1d1-4084-4c09-bd9c-deb5307e5f3f"
     role_definition_name     = "Owner"
     scope_resource_group_key = "prod_hub"
   }
 
-  # Europe hub RG
+  # UK South hub RG
   prod_hub_eu_owner_group = {
-    principal_id             = "00000000-0000-0000-0000-000000000000"
+    principal_id             = "0ec4e1d1-4084-4c09-bd9c-deb5307e5f3f"
     role_definition_name     = "Owner"
     scope_resource_group_key = "prod_hub_eu"
   }
 
   prod_hub_eu_owner_user = {
-    principal_id             = "00000000-0000-0000-0000-000000000000"
+    principal_id             = "0ec4e1d1-4084-4c09-bd9c-deb5307e5f3f"
     role_definition_name     = "Owner"
     scope_resource_group_key = "prod_hub_eu"
   }
 
   # Shared connectivity RG (vWAN RG)
   prod_connectivity_owner_group = {
-    principal_id             = "00000000-0000-0000-0000-000000000000"
+    principal_id             = "0ec4e1d1-4084-4c09-bd9c-deb5307e5f3f"
     role_definition_name     = "Owner"
     scope_resource_group_key = "prod_connectivity"
   }
 
   prod_connectivity_owner_user = {
-    principal_id             = "00000000-0000-0000-0000-000000000000"
+    principal_id             = "0ec4e1d1-4084-4c09-bd9c-deb5307e5f3f"
     role_definition_name     = "Owner"
     scope_resource_group_key = "prod_connectivity"
   }
@@ -176,7 +178,7 @@ role_assignments_azure_resource_manager = {
 # - Map keys must match the `virtual_hubs` hub keys (e.g., `prod`, `prod_eu`).
 ###############################################
 firewall_log_analytics_workspaces = {
-  # Southeast Asia (southeastasia) - vHub key: prod
+  # West US (westus) - vHub key: prod
   prod = {
     name               = "demo-prod-sea-firewall-law"
     resource_group_key = "prod_hub"
@@ -186,7 +188,7 @@ firewall_log_analytics_workspaces = {
     }
   }
 
-  # Europe (westeurope) - vHub key: prod_eu
+  # UK South (uksouth) - vHub key: prod_eu
   prod_eu = {
     name               = "demo-prod-eu-firewall-law"
     resource_group_key = "prod_hub_eu"
@@ -212,7 +214,7 @@ firewall_log_analytics_workspaces = {
 # not expose log categories.
 ###############################################
 expressroute_gateway_log_analytics_workspaces = {
-  # Southeast Asia (southeastasia) - vHub key: prod
+  # West US (westus) - vHub key: prod
   prod = {
     name               = "demo-prod-sea-ergw-law"
     resource_group_key = "prod_hub"
@@ -222,7 +224,7 @@ expressroute_gateway_log_analytics_workspaces = {
     }
   }
 
-  # Europe (westeurope) - vHub key: prod_eu
+  # UK South (uksouth) - vHub key: prod_eu
   prod_eu = {
     name               = "demo-prod-eu-ergw-law"
     resource_group_key = "prod_hub_eu"
@@ -252,7 +254,7 @@ virtual_wan_settings = {
   virtual_wan = {
     name                = "demo-prod-sea-vwan"
     resource_group_name = "demo-prod-connectivity-rg"
-    location            = "southeastasia"
+    location            = "westus"
     type                = "Standard"
 
     allow_branch_to_branch_traffic = true
@@ -288,7 +290,7 @@ expressroute_circuits = {
     # ExpressRoute circuit: demo-prod-sea-er-circuit-01
     name               = "demo-prod-sea-er-circuit-01"
     resource_group_key = "prod_hub"
-    location           = "southeastasia"
+    location           = "westus"
 
     sku = {
       tier   = "Premium"
@@ -318,12 +320,12 @@ expressroute_circuits = {
 ###############################################
 firewall_policies = {
   ###############################################
-  # Southeast Asia (southeastasia)
+  # West US (westus)
   ###############################################
   prod = {
     name               = "demo-vhub-prod-sea-firewall-policy"
     resource_group_key = "prod_hub"
-    location           = "southeastasia"
+    location           = "westus"
     tags = {
       environment = "prod"
       workload    = "demo-fwpolicy"
@@ -374,10 +376,10 @@ firewall_policies = {
                   "store.policy.core.windows.net",
                   "*.securitycenter.windows.com",
                   "*.cloud.defender.microsoft.com",
-                  "*.hcp.southeastasia.azmk8s.io",
+                  "*.hcp.westus.azmk8s.io",
                   "*.microsoft.com",
-                  "southeastasia.handler.control.monitor.azure.com",
-                  "southeastasia.dp.kubernetesconfiguration.azure.com",
+                  "westus.handler.control.monitor.azure.com",
+                  "westus.dp.kubernetesconfiguration.azure.com",
                 ]
               },
               {
@@ -400,14 +402,14 @@ firewall_policies = {
                 name                  = "aks-controlplane-udp-1194"
                 protocols             = ["UDP"]
                 source_addresses      = ["*"]
-                destination_addresses = ["AzureCloud.southeastasia"]
+                destination_addresses = ["AzureCloud.westus"]
                 destination_ports     = ["1194"]
               },
               {
                 name                  = "aks-controlplane-tcp-9000"
                 protocols             = ["TCP"]
                 source_addresses      = ["*"]
-                destination_addresses = ["AzureCloud.southeastasia"]
+                destination_addresses = ["AzureCloud.westus"]
                 destination_ports     = ["9000"]
               },
               {
@@ -439,12 +441,12 @@ firewall_policies = {
   }
 
   ###############################################
-  # Europe (westeurope)
+  # UK South (uksouth)
   ###############################################
   prod_eu = {
     name               = "demo-vhub-prod-eu-firewall-policy"
     resource_group_key = "prod_hub_eu"
-    location           = "westeurope"
+    location           = "uksouth"
     tags = {
       environment = "prod"
       workload    = "demo-fwpolicy"
@@ -517,14 +519,14 @@ firewall_policies = {
                 name                  = "aks-controlplane-udp-1194"
                 protocols             = ["UDP"]
                 source_addresses      = ["*"]
-                destination_addresses = ["AzureCloud.westeurope"]
+                destination_addresses = ["AzureCloud.uksouth"]
                 destination_ports     = ["1194"]
               },
               {
                 name                  = "aks-controlplane-tcp-9000"
                 protocols             = ["TCP"]
                 source_addresses      = ["*"]
-                destination_addresses = ["AzureCloud.westeurope"]
+                destination_addresses = ["AzureCloud.uksouth"]
                 destination_ports     = ["9000"]
               },
               {
@@ -565,10 +567,10 @@ firewall_policies = {
 ###############################################
 virtual_hubs = {
   ###############################################
-  # Southeast Asia (southeastasia)
+  # West US (westus)
   ###############################################
   prod = {
-    location                          = "southeastasia"
+    location                          = "westus"
     default_parent_resource_group_key = "prod_hub"
 
     enabled_resources = {
@@ -724,10 +726,10 @@ virtual_hubs = {
   }
 
   ###############################################
-  # Europe (westeurope)
+  # UK South (uksouth)
   ###############################################
   prod_eu = {
-    location                          = "westeurope"
+    location                          = "uksouth"
     default_parent_resource_group_key = "prod_hub_eu"
 
     enabled_resources = {
